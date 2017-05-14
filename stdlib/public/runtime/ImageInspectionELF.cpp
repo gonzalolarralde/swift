@@ -68,8 +68,12 @@ static SectionInfo getSectionInfo(const char *imageName,
   SectionInfo sectionInfo = { 0, nullptr };
   void *handle = dlopen(imageName, RTLD_LAZY | RTLD_NOLOAD);
   if (!handle) {
-    fatalError(/* flags = */ 0, "dlopen() failed on `%s': %s", imageName,
-               dlerror());
+    // This may probably mean that the library wasn't opened before. Let's try open it now.
+    handle = dlopen(imageName, RTLD_LAZY);
+    if (!handle) {
+      fatalError(/* flags = */ 0, "dlopen() failed on `%s': %s", imageName,
+                 dlerror());
+    }
   }
   void *symbol = dlsym(handle, sectionName);
   if (symbol) {
