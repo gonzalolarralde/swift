@@ -423,7 +423,10 @@ public:
     return insert(new (F.getModule())
                       GlobalAddrInst(getSILDebugLocation(Loc), g));
   }
-
+  GlobalAddrInst *createGlobalAddr(SILLocation Loc, SILType Ty) {
+    return insert(new (F.getModule())
+                  GlobalAddrInst(getSILDebugLocation(Loc), Ty));
+  }
   IntegerLiteralInst *createIntegerLiteral(IntegerLiteralExpr *E);
 
   IntegerLiteralInst *createIntegerLiteral(SILLocation Loc, SILType Ty,
@@ -1294,10 +1297,7 @@ public:
   }
 
   ValueMetatypeInst *createValueMetatype(SILLocation Loc, SILType Metatype,
-                                         SILValue Base) {
-    return insert(new (F.getModule()) ValueMetatypeInst(
-        getSILDebugLocation(Loc), Metatype, Base));
-  }
+                                         SILValue Base);
 
   ExistentialMetatypeInst *
   createExistentialMetatype(SILLocation Loc, SILType Metatype, SILValue Base) {

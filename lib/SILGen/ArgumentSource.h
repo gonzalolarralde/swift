@@ -27,6 +27,7 @@
 
 namespace swift {
 namespace Lowering {
+class Conversion;
 
 /// A means of generating an argument.
 ///
@@ -157,7 +158,7 @@ public:
   explicit operator bool() const & {
     switch (StoredKind) {
     case Kind::RValue:
-      return bool(asKnownRValue());
+      return !asKnownRValue().isNull();
     case Kind::LValue:
       return asKnownLValue().isValid();
     case Kind::Expr:
@@ -264,6 +265,9 @@ public:
   ManagedValue getAsSingleValue(SILGenFunction &SGF,
                                 AbstractionPattern origFormalType,
                                 SGFContext C = SGFContext()) &&;
+
+  ManagedValue getConverted(SILGenFunction &SGF, const Conversion &conversion,
+                            SGFContext C = SGFContext()) &&;
 
   void forwardInto(SILGenFunction &SGF, Initialization *dest) &&;
   void forwardInto(SILGenFunction &SGF, AbstractionPattern origFormalType,

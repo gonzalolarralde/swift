@@ -83,7 +83,6 @@ static void addMandatoryOptPipeline(SILPassPipelinePlan &P,
   // Select access kind after capture promotion and before stack promotion.
   // This guarantees that stack-promotable boxes have [static] enforcement.
   P.addAccessEnforcementSelection();
-  P.addInactiveAccessMarkerElimination();
 
   P.addAllocBoxToStack();
   P.addNoReturnFolding();
@@ -430,19 +429,17 @@ SILPassPipelinePlan::getLoweringPassPipeline() {
   return P;
 }
 
-/// Non-mandatory passes that should run as preparation for IRGen.
-static void addIRGenPreparePipeline(SILPassPipelinePlan &P) {
+SILPassPipelinePlan
+SILPassPipelinePlan::getIRGenPreparePassPipeline(const SILOptions &Options) {
+  SILPassPipelinePlan P;
   P.startPipeline("IRGen Preparation");
   // Insert SIL passes to run during IRGen.
   // Hoist generic alloc_stack instructions to the entry block to enable better
   // llvm-ir generation for dynamic alloca instructions.
   P.addAllocStackHoisting();
-  //P.addLoadableByAddress();
-}
-
-SILPassPipelinePlan SILPassPipelinePlan::getIRGenPreparePassPipeline() {
-  SILPassPipelinePlan P;
-  addIRGenPreparePipeline(P);
+  if (Options.EnableLargeLoadableTypes) {
+    P.addLoadableByAddress();
+  }
   return P;
 }
 
@@ -456,7 +453,7 @@ SILPassPipelinePlan::getSILOptPreparePassPipeline(const SILOptions &Options) {
   }
 
   P.startPipeline("SILOpt Prepare Passes");
-  P.addFullAccessMarkerElimination();
+  P.addAccessMarkerElimination();
 
   return P;
 }
@@ -593,7 +590,7 @@ void SILPassPipelinePlan::print(llvm::raw_ostream &os) {
                os << "        \"" << Pipeline.Name << "\"";
                for (PassKind Kind : getPipelinePasses(Pipeline)) {
                  os << ",\n        [\"" << PassKindID(Kind) << "\","
-                    << PassKindTag(Kind) << ']';
+                    << "\"" << PassKindTag(Kind) << "\"]";
                }
              },
              [&] { os << "\n    ],\n"; });

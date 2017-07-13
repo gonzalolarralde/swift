@@ -159,13 +159,15 @@ Optional<Type> TypeChecker::checkObjCKeyPathExpr(DeclContext *dc,
   };
   
   // Local function to perform name lookup for the current index.
-  auto performLookup = [&](Identifier componentName,
+  auto performLookup = [&](DeclBaseName componentName,
                            SourceLoc componentNameLoc,
                            Type &lookupType) -> LookupResult {
     if (state == Beginning)
       return lookupUnqualified(dc, componentName, componentNameLoc);
 
     assert(currentType && "Non-beginning state must have a type");
+    if (!currentType->mayHaveMembers())
+      return LookupResult();
 
     // Determine the type in which the lookup should occur. If we have
     // a bridged value type, this will be the Objective-C class to
@@ -181,13 +183,13 @@ Optional<Type> TypeChecker::checkObjCKeyPathExpr(DeclContext *dc,
 
   // Local function to print a component to the string.
   bool needDot = false;
-  auto printComponent = [&](Identifier component) {
+  auto printComponent = [&](DeclBaseName component) {
     if (needDot)
       keyPathOS << ".";
     else
       needDot = true;
 
-    keyPathOS << component.str();
+    keyPathOS << component;
   };
 
   bool isInvalid = false;
@@ -199,6 +201,9 @@ Optional<Type> TypeChecker::checkObjCKeyPathExpr(DeclContext *dc,
     // ObjC keypaths only support named segments.
     // TODO: Perhaps we can map subscript components to dictionary keys.
     switch (auto kind = component.getKind()) {
+    case KeyPathExpr::Component::Kind::Invalid:
+      continue;
+
     case KeyPathExpr::Component::Kind::UnresolvedProperty:
       break;
     case KeyPathExpr::Component::Kind::UnresolvedSubscript:

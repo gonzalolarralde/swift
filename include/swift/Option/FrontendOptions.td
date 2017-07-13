@@ -109,6 +109,9 @@ def disable_target_os_checking :
 def enable_astscope_lookup : Flag<["-"], "enable-astscope-lookup">,
   HelpText<"Enable ASTScope-based unqualified name lookup">;
 
+def enable_recursive_constraints : Flag<["-"], "enable-recursive-constraints">,
+  HelpText<"Enable SE-0157: Recursive Protocol Constraints">;
+
 def print_clang_stats : Flag<["-"], "print-clang-stats">,
   HelpText<"Print Clang importer statistics">;
 
@@ -264,6 +267,9 @@ def suppress_static_exclusivity_swap : Flag<["-"], "suppress-static-exclusivity-
 
 def enable_sil_opaque_values : Flag<["-"], "enable-sil-opaque-values">,
   HelpText<"Enable SIL Opaque Values">;
+  
+def enable_large_loadable_types : Flag<["-"], "enable-large-loadable-types">,
+  HelpText<"Enable Large Loadable types IRGen pass">;
 
 def enable_experimental_property_behaviors :
   Flag<["-"], "enable-experimental-property-behaviors">,
@@ -291,6 +297,9 @@ def disable_tsan_inout_instrumentation : Flag<["-"],
   "disable-tsan-inout-instrumentation">,
   HelpText<"Disable treatment of inout parameters as Thread Sanitizer accesses">;
 
+def report_errors_to_debugger : Flag<["-"], "report-errors-to-debugger">,
+  HelpText<"Invoke the debugger hook on fatalError calls">;
+
 def enable_infer_import_as_member :
   Flag<["-"], "enable-infer-import-as-member">,
   HelpText<"Infer when a global could be imported as a member">;
@@ -304,11 +313,26 @@ def disable_swift3_objc_inference :
   Flags<[FrontendOption, HelpHidden]>,
   HelpText<"Disable Swift 3's @objc inference rules for NSObject-derived classes and 'dynamic' members (emulates Swift 4 behavior)">;
 
+def enable_nskeyedarchiver_diagnostics :
+  Flag<["-"], "enable-nskeyedarchiver-diagnostics">,
+  HelpText<"Diagnose classes with unstable mangled names adopting NSCoding">;
+def disable_nskeyedarchiver_diagnostics :
+  Flag<["-"], "disable-nskeyedarchiver-diagnostics">,
+  HelpText<"Allow classes with unstable mangled names to adopt NSCoding">;
+
 def warn_long_function_bodies : Separate<["-"], "warn-long-function-bodies">,
   MetaVarName<"<n>">,
   HelpText<"Warns when type-checking a function takes longer than <n> ms">;
 def warn_long_function_bodies_EQ : Joined<["-"], "warn-long-function-bodies=">,
   Alias<warn_long_function_bodies>;
+
+def warn_long_expression_type_checking : Separate<["-"], "warn-long-expression-type-checking">,
+  MetaVarName<"<n>">,
+  HelpText<"Warns when type-checking a function takes longer than <n> ms">;
+def warn_long_expression_type_checking_EQ : Joined<["-"], "warn-long-expression-type-checking=">,
+  Alias<warn_long_expression_type_checking>;
+
+def solver_expression_time_threshold_EQ : Joined<["-"], "solver-expression-time-threshold=">;
 
 def enable_source_import : Flag<["-"], "enable-source-import">,
   HelpText<"Enable importing of Swift source files">;
@@ -350,6 +374,9 @@ def sil_link_all : Flag<["-"], "sil-link-all">,
 def sil_serialize_all : Flag<["-"], "sil-serialize-all">,
   HelpText<"Serialize all generated SIL">;
 
+def sil_serialize_witness_tables : Flag<["-"], "sil-serialize-witness-tables">,
+  HelpText<"Serialize eligible SIL witness tables">;
+
 def sil_verify_all : Flag<["-"], "sil-verify-all">,
   HelpText<"Verify SIL after each transform">;
 
@@ -390,6 +417,9 @@ def external_pass_pipeline_filename : Separate<["-"], "external-pass-pipeline-fi
     HelpText<"Use the pass pipeline defined by <pass_pipeline_file>">,
     MetaVarName<"<pass_pipeline_file>">;
 
+def index_system_modules : Flag<["-"], "index-system-modules">,
+  HelpText<"Emit index data for imported serialized swift system modules">;
+
 def dump_interface_hash : Flag<["-"], "dump-interface-hash">,
    HelpText<"Parse input file(s) and dump interface token hash(es)">,
    ModeOpt;
@@ -411,8 +441,9 @@ def group_info_path : Separate<["-"], "group-info-path">,
 def diagnostics_editor_mode : Flag<["-"], "diagnostics-editor-mode">,
 HelpText<"Diagnostics will be used in editor">;
 
-def validate_tbd_against_ir: Flag<["-"], "validate-tbd-against-ir">,
-    HelpText<"Compare the symbols in the IR against the TBD file that would be generated.">;
+def validate_tbd_against_ir_EQ: Joined<["-"], "validate-tbd-against-ir=">,
+    HelpText<"Compare the symbols in the IR against the TBD file that would be generated.">,
+    MetaVarName<"<level>">;
 
 // FIXME: Remove this flag when void subscripts are implemented.
 // This is used to guard preemptive testing for the fix-it.

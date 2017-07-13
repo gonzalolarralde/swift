@@ -465,7 +465,8 @@ void walkRelatedDecls(const ValueDecl *VD, const FnTy &Fn) {
   // For now we use UnqualifiedLookup to fetch other declarations with the same
   // base name.
   auto TypeResolver = VD->getASTContext().getLazyResolver();
-  UnqualifiedLookup Lookup(VD->getName(), VD->getDeclContext(), TypeResolver);
+  UnqualifiedLookup Lookup(VD->getBaseName(), VD->getDeclContext(),
+                           TypeResolver);
   for (auto result : Lookup.Results) {
     ValueDecl *RelatedVD = result.getValueDecl();
     if (RelatedVD->getAttrs().isUnavailable(VD->getASTContext()))
@@ -934,9 +935,9 @@ static DeclName getSwiftDeclName(const ValueDecl *VD,
   auto &Ctx = VD->getDeclContext()->getASTContext();
   assert(SwiftLangSupport::getNameKindForUID(Info.NameKind) == NameKind::Swift);
   DeclName OrigName = VD->getFullName();
-  Identifier BaseName = Info.BaseName.empty()
-                            ? OrigName.getBaseName()
-                            : Ctx.getIdentifier(Info.BaseName);
+  DeclBaseName BaseName = Info.BaseName.empty()
+                              ? OrigName.getBaseName()
+                              : DeclBaseName(Ctx.getIdentifier(Info.BaseName));
   auto OrigArgs = OrigName.getArgumentNames();
   SmallVector<Identifier, 8> Args(OrigArgs.begin(), OrigArgs.end());
   if (Info.ArgNames.size() > OrigArgs.size())
@@ -951,8 +952,18 @@ static DeclName getSwiftDeclName(const ValueDecl *VD,
 }
 
 /// Returns true for failure to resolve.
-static bool passNameInfoForDecl(const ValueDecl *VD, NameTranslatingInfo &Info,
+static bool passNameInfoForDecl(SemaToken SemaTok, NameTranslatingInfo &Info,
                     std::function<void(const NameTranslatingInfo &)> Receiver) {
+  auto *VD = SemaTok.ValueD;
+
+  // If the given name is not a function name, and the cursor points to
+  // a contructor call, we use the type declaration instead of the init
+  // declaration to translate the name.
+  if (Info.ArgNames.empty() && !Info.IsZeroArgSelector) {
+    if (auto *TD = SemaTok.CtorTyRef) {
+      VD = TD;
+    }
+  }
   switch (SwiftLangSupport::getNameKindForUID(Info.NameKind)) {
   case NameKind::Swift: {
     NameTranslatingInfo Result;
@@ -992,6 +1003,7 @@ static bool passNameInfoForDecl(const ValueDecl *VD, NameTranslatingInfo &Info,
 
     const clang::NamedDecl *Named = nullptr;
     auto *BaseDecl = VD;
+
     while (!Named && BaseDecl) {
       Named = dyn_cast_or_null<clang::NamedDecl>(BaseDecl->getClangDecl());
       BaseDecl = BaseDecl->getOverriddenDecl();
@@ -1006,7 +1018,7 @@ static bool passNameInfoForDecl(const ValueDecl *VD, NameTranslatingInfo &Info,
     DeclName Name = Importer->importName(Named, ObjCName);
     NameTranslatingInfo Result;
     Result.NameKind = SwiftLangSupport::getUIDForNameKind(NameKind::Swift);
-    Result.BaseName = Name.getBaseName().str();
+    Result.BaseName = Name.getBaseIdentifier().str();
     std::transform(Name.getArgumentNames().begin(),
                    Name.getArgumentNames().end(),
                    std::back_inserter(Result.ArgNames),
@@ -1180,6 +1192,7 @@ static void resolveCursor(SwiftLangSupport &Lang,
         }
         return;
       }
+      case SemaTokenKind::ExprStart:
       case SemaTokenKind::StmtStart: {
         Receiver({});
         return;
@@ -1272,7 +1285,7 @@ static void resolveName(SwiftLangSupport &Lang, StringRef InputFile,
         return;
 
       case SemaTokenKind::ValueRef: {
-        bool Failed = passNameInfoForDecl(SemaTok.ValueD, Input, Receiver);
+        bool Failed = passNameInfoForDecl(SemaTok, Input, Receiver);
         if (Failed) {
           if (!getPreviousASTSnaps().empty()) {
             // Attempt again using the up-to-date AST.
@@ -1284,6 +1297,7 @@ static void resolveName(SwiftLangSupport &Lang, StringRef InputFile,
         }
         return;
       }
+      case SemaTokenKind::ExprStart:
       case SemaTokenKind::StmtStart: {
         Receiver({});
         return;
@@ -1501,10 +1515,8 @@ getNameInfo(StringRef InputFile, unsigned Offset, NameTranslatingInfo &Input,
         if (Entity.Mod) {
           // Module is ignored
         } else {
-          NameTranslatingInfo NewInput = Input;
           // FIXME: Should pass the main module for the interface but currently
           // it's not necessary.
-          passNameInfoForDecl(Entity.Dcl, NewInput, Receiver);
         }
       } else {
         Receiver({});

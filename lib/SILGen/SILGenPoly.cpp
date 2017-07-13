@@ -316,7 +316,7 @@ RValue Transform::transform(RValue &&input,
   // If we emitted into context, be sure to finish the overall initialization.
   if (tupleInit) {
     tupleInit->finishInitialization(SGF);
-    return RValue();
+    return RValue::forInContext();
   }
 
   return RValue::withPreExplodedElements(outputExpansion, outputTupleType);
@@ -416,13 +416,14 @@ ManagedValue Transform::transform(ManagedValue v,
     auto transformOptionalPayload = [&](SILGenFunction &gen,
                                         SILLocation loc,
                                         ManagedValue input,
-                                        SILType loweredResultTy) -> ManagedValue {
+                                        SILType loweredResultTy,
+                                        SGFContext context) -> ManagedValue {
       return transform(input,
                        inputOrigType.getAnyOptionalObjectType(),
                        inputObjectType,
                        outputOrigType.getAnyOptionalObjectType(),
                        outputObjectType,
-                       SGFContext());
+                       context);
     };
 
     return SGF.emitOptionalToOptional(Loc, v, loweredResultTy,
@@ -893,7 +894,7 @@ namespace {
       }
 
       // Special-case: tuples containing inouts.
-      if (inputTupleType && inputTupleType->hasInOut()) {
+      if (inputTupleType && inputTupleType->hasInOutElement()) {
         // Non-materializable tuple types cannot be bound as generic
         // arguments, so none of the remaining transformations apply.
         // Instead, the outermost tuple layer is exploded, even when
@@ -1077,8 +1078,8 @@ namespace {
                                     CanTupleType inputTupleType,
                                     AbstractionPattern outputOrigType,
                                     CanTupleType outputTupleType) {
-      assert(!inputTupleType->hasInOut() &&
-             !outputTupleType->hasInOut());
+      assert(!inputTupleType->hasInOutElement() &&
+             !outputTupleType->hasInOutElement());
       assert(inputTupleType->getNumElements() ==
              outputTupleType->getNumElements());
 
@@ -1163,8 +1164,8 @@ namespace {
       // when witness method thunks re-abstract a non-mutating
       // witness for a mutating requirement. The inout self is just
       // loaded to produce a value in this case.
-      assert(inputSubstType->hasInOut() ||
-             !outputSubstType->hasInOut());
+      assert(inputSubstType->hasInOutElement() ||
+             !outputSubstType->hasInOutElement());
       assert(inputSubstType->getNumElements() ==
              outputSubstType->getNumElements());
 
@@ -1185,8 +1186,8 @@ namespace {
                                   ManagedValue inputTupleAddr) {
       assert(inputOrigType.isTypeParameter());
       assert(outputOrigType.matchesTuple(outputSubstType));
-      assert(!inputSubstType->hasInOut() &&
-             !outputSubstType->hasInOut());
+      assert(!inputSubstType->hasInOutElement() &&
+             !outputSubstType->hasInOutElement());
       assert(inputSubstType->getNumElements() ==
              outputSubstType->getNumElements());
 
@@ -1232,8 +1233,8 @@ namespace {
                                  TemporaryInitialization &tupleInit) {
       assert(inputOrigType.matchesTuple(inputSubstType));
       assert(outputOrigType.matchesTuple(outputSubstType));
-      assert(!inputSubstType->hasInOut() &&
-             !outputSubstType->hasInOut());
+      assert(!inputSubstType->hasInOutElement() &&
+             !outputSubstType->hasInOutElement());
       assert(inputSubstType->getNumElements() ==
              outputSubstType->getNumElements());
 
@@ -3060,7 +3061,8 @@ SILGenFunction::emitTransformedValue(SILLocation loc, ManagedValue v,
                                      SGFContext ctxt) {
   return emitTransformedValue(loc, v,
                               AbstractionPattern(inputType), inputType,
-                              AbstractionPattern(outputType), outputType);
+                              AbstractionPattern(outputType), outputType,
+                              ctxt);
 }
 
 ManagedValue
@@ -3290,7 +3292,7 @@ void SILGenFunction::emitProtocolWitness(Type selfType,
 
   // Get the type of the witness.
   auto witnessInfo = getConstantInfo(witness);
-  CanAnyFunctionType witnessSubstTy = witnessInfo.LoweredInterfaceType;
+  CanAnyFunctionType witnessSubstTy = witnessInfo.LoweredType;
   if (!witnessSubs.empty()) {
     witnessSubstTy = cast<FunctionType>(
       cast<GenericFunctionType>(witnessSubstTy)
@@ -3342,7 +3344,7 @@ void SILGenFunction::emitProtocolWitness(Type selfType,
     }
   }
 
-  AbstractionPattern witnessOrigTy(witnessInfo.LoweredInterfaceType);
+  AbstractionPattern witnessOrigTy(witnessInfo.LoweredType);
   TranslateArguments(*this, loc,
                      origParams, witnessParams,
                      witnessFTy->getParameters())

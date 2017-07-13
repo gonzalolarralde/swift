@@ -237,10 +237,13 @@ static void printValueDecl(ValueDecl *Decl, raw_ostream &OS) {
   printFullContext(Decl->getDeclContext(), OS);
   assert(Decl->hasName());
 
-  if (Decl->isOperator())
-    OS << '"' << Decl->getName() << '"';
-  else
-    OS << Decl->getName();
+  if (Decl->isOperator()) {
+    OS << '"' << Decl->getBaseName() << '"';
+  } else if (Decl->getBaseName() == "subscript") {
+    OS << '`' << Decl->getBaseName() << '`';
+  } else {
+    OS << Decl->getBaseName();
+  }
 }
 
 /// SILDeclRef uses sigil "#" and prints the fully qualified dotted path.
@@ -1860,6 +1863,25 @@ public:
                && "todo");
         break;
       }
+      case KeyPathPatternComponent::Kind::OptionalWrap:
+      case KeyPathPatternComponent::Kind::OptionalChain:
+      case KeyPathPatternComponent::Kind::OptionalForce: {
+        switch (kind) {
+        case KeyPathPatternComponent::Kind::OptionalWrap:
+          *this << "optional_wrap : $";
+          break;
+        case KeyPathPatternComponent::Kind::OptionalChain:
+          *this << "optional_chain : $";
+          break;
+        case KeyPathPatternComponent::Kind::OptionalForce:
+          *this << "optional_force : $";
+          break;
+        default:
+          llvm_unreachable("out of sync");
+        }
+        *this << component.getComponentType();
+        break;
+      }
       }
     }
     
@@ -2449,7 +2471,7 @@ void SILWitnessTable::print(llvm::raw_ostream &OS, bool Verbose) const {
     case MissingOptional: {
       // optional requirement 'declref': <<not present>>
       OS << "optional requirement '"
-         << witness.getMissingOptionalWitness().Witness->getName()
+         << witness.getMissingOptionalWitness().Witness->getBaseName()
          << "': <<not present>>";
       break;
     }

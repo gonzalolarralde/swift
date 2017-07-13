@@ -179,10 +179,9 @@ class alignas(8) Expr {
     friend class UnresolvedDeclRefExpr;
     unsigned : NumExprBits;
     unsigned DeclRefKind : 2;
-    unsigned IsSpecialized : 1;
     unsigned FunctionRefKind : 2;
   };
-  enum { NumUnresolvedDeclRefExprBits = NumExprBits + 5 };
+  enum { NumUnresolvedDeclRefExprBits = NumExprBits + 4 };
   static_assert(NumUnresolvedDeclRefExprBits <= 32, "fits in an unsigned");
 
   class MemberRefExprBitfields {
@@ -272,14 +271,6 @@ class alignas(8) Expr {
   enum { NumOverloadSetRefExprBits = NumExprBits + 2};
   static_assert(NumOverloadSetRefExprBits <= 32, "fits in an unsigned");
 
-  class OverloadedDeclRefExprBitfields {
-    friend class OverloadedDeclRefExpr;
-    unsigned : NumOverloadSetRefExprBits;
-    unsigned IsSpecialized : 1;
-  };
-  enum { NumOverloadedDeclRefExprBits = NumOverloadSetRefExprBits + 1 };
-  static_assert(NumOverloadedDeclRefExprBits <= 32, "fits in an unsigned");
-
   class BooleanLiteralExprBitfields {
     friend class BooleanLiteralExpr;
     unsigned : NumLiteralExprBits;
@@ -351,9 +342,9 @@ class alignas(8) Expr {
   class TupleShuffleExprBitfields {
     friend class TupleShuffleExpr;
     unsigned : NumImplicitConversionExprBits;
-    unsigned IsSourceScalar : 1;
+    unsigned TypeImpact : 2;
   };
-  enum { NumTupleShuffleExprBits = NumImplicitConversionExprBits + 1 };
+  enum { NumTupleShuffleExprBits = NumImplicitConversionExprBits + 2 };
   static_assert(NumTupleShuffleExprBits <= 32, "fits in an unsigned");
 
   class ApplyExprBitfields {
@@ -432,7 +423,6 @@ protected:
     DynamicSubscriptExprBitfields DynamicSubscriptExprBits;
     UnresolvedMemberExprBitfields UnresolvedMemberExprBits;
     OverloadSetRefExprBitfields OverloadSetRefExprBits;
-    OverloadedDeclRefExprBitfields OverloadedDeclRefExprBits;
     BooleanLiteralExprBitfields BooleanLiteralExprBits;
     MagicIdentifierLiteralExprBitfields MagicIdentifierLiteralExprBits;
     ObjectLiteralExprBitfields ObjectLiteralExprBits;
@@ -602,12 +592,12 @@ public:
   /// a base class.
   bool isSuperExpr() const;
 
-  /// Returns true if directly appending a parameter list would be syntactically
-  /// valid.
+  /// Returns false if this expression needs to be wrapped in parens when
+  /// used inside of a any postfix expression, true otherwise.
   ///
-  /// Good examples: foo.bar, baz().
-  /// Bad examples: 
-  bool canAppendCallParentheses() const;
+  /// \param appendingPostfixOperator if the expression being
+  /// appended is a postfix operator like '!' or '?'.
+  bool canAppendPostfixExpression(bool appendingPostfixOperator = false) const;
 
   /// Returns true if this is an infix operator of some sort, including
   /// a builtin operator.
@@ -1086,10 +1076,6 @@ public:
     llvm_unreachable("bad Kind");
   }
 
-  bool isDSOHandle() const {
-    return getKind() == DSOHandle;
-  }
-
   SourceRange getSourceRange() const { return Loc; }
 
   // For a magic identifier that produces a string literal, retrieve the
@@ -1249,27 +1235,15 @@ public:
 
 /// DeclRefExpr - A reference to a value, "x".
 class DeclRefExpr : public Expr {
-  /// This is used when the reference is specialized, e.g "GenCls<Int>", to
-  /// hold information about the generic arguments.
-  struct SpecializeInfo {
-    ConcreteDeclRef D;
-    ArrayRef<TypeRepr*> GenericArgs;
-  };
-
-  /// \brief The declaration pointer or SpecializeInfo pointer if it was
-  /// explicitly specialized with <...>.
-  llvm::PointerUnion<ConcreteDeclRef, SpecializeInfo *> DOrSpecialized;
+  /// \brief The declaration pointer.
+  ConcreteDeclRef D;
   DeclNameLoc Loc;
-
-  SpecializeInfo *getSpecInfo() const {
-    return DOrSpecialized.dyn_cast<SpecializeInfo*>();
-  }
 
 public:
   DeclRefExpr(ConcreteDeclRef D, DeclNameLoc Loc, bool Implicit,
               AccessSemantics semantics = AccessSemantics::Ordinary,
               Type Ty = Type())
-    : Expr(ExprKind::DeclRef, Implicit, Ty), DOrSpecialized(D), Loc(Loc) {
+    : Expr(ExprKind::DeclRef, Implicit, Ty), D(D), Loc(Loc) {
     DeclRefExprBits.Semantics = (unsigned) semantics;
     DeclRefExprBits.FunctionRefKind =
       static_cast<unsigned>(Loc.isCompound() ? FunctionRefKind::Compound
@@ -1289,29 +1263,9 @@ public:
 
   /// Retrieve the concrete declaration reference.
   ConcreteDeclRef getDeclRef() const {
-    if (auto Spec = getSpecInfo())
-      return Spec->D;
-    return DOrSpecialized.get<ConcreteDeclRef>();
+    return D;
   }
 
-  void setSpecialized();
-
-  /// \brief Determine whether this declaration reference was immediately
-  /// specialized by <...>.
-  bool isSpecialized() const { return getSpecInfo() != nullptr; }
-
-  /// Set the generic arguments.
-  ///
-  /// This copies the array using ASTContext's allocator.
-  void setGenericArgs(ArrayRef<TypeRepr*> GenericArgs);
-
-  /// Returns the generic arguments if it was specialized or an empty array
-  /// otherwise.
-  ArrayRef<TypeRepr *> getGenericArgs() const {
-    if (auto Spec = getSpecInfo())
-      return Spec->GenericArgs;
-    return ArrayRef<TypeRepr *>();
-  }
   SourceRange getSourceRange() const { return Loc.getSourceRange(); }
   SourceLoc getLoc() const { return Loc.getBaseNameLoc(); }
   DeclNameLoc getNameLoc() const { return Loc; }
@@ -1382,12 +1336,31 @@ public:
   static TypeExpr *createImplicitHack(SourceLoc Loc, Type Ty, ASTContext &C);
 
   
-  /// Return a TypeExpr for a TypeDecl and the specified location.
+  /// Create a TypeExpr for a TypeDecl at the specified location.
   static TypeExpr *createForDecl(SourceLoc Loc, TypeDecl *D,
                                  bool isImplicit);
-  static TypeExpr *createForSpecializedDecl(SourceLoc Loc, TypeDecl *D,
-                                            ArrayRef<TypeRepr*> args,
-                                            SourceRange angleLocs);
+
+  /// Create a TypeExpr for a member TypeDecl of the given parent TypeDecl.
+  static TypeExpr *createForMemberDecl(SourceLoc ParentNameLoc,
+                                       TypeDecl *Parent,
+                                       SourceLoc NameLoc,
+                                       TypeDecl *Decl);
+
+  /// Create a TypeExpr for a member TypeDecl of the given parent IdentTypeRepr.
+  static TypeExpr *createForMemberDecl(IdentTypeRepr *ParentTR,
+                                       SourceLoc NameLoc,
+                                       TypeDecl *Decl);
+
+  /// Create a TypeExpr from an IdentTypeRepr with the given arguments applied
+  /// at the specified location.
+  ///
+  /// Returns nullptr if the reference cannot be formed, which is a hack due
+  /// to limitations in how we model generic typealiases.
+  static TypeExpr *createForSpecializedDecl(IdentTypeRepr *ParentTR,
+                                            ArrayRef<TypeRepr*> Args,
+                                            SourceRange AngleLocs,
+                                            ASTContext &C);
+
   TypeLoc &getTypeLoc() { return Info; }
   TypeLoc getTypeLoc() const { return Info; }
   TypeRepr *getTypeRepr() const { return Info.getTypeRepr(); }
@@ -1488,24 +1461,16 @@ class OverloadedDeclRefExpr final : public OverloadSetRefExpr {
 
 public:
   OverloadedDeclRefExpr(ArrayRef<ValueDecl*> Decls, DeclNameLoc Loc,
-                        bool isSpecialized,
                         FunctionRefKind functionRefKind,
                         bool Implicit, Type Ty = Type())
       : OverloadSetRefExpr(ExprKind::OverloadedDeclRef, Decls, functionRefKind,
                            Implicit, Ty),
         Loc(Loc) {
-    OverloadedDeclRefExprBits.IsSpecialized = isSpecialized;
   }
   
   DeclNameLoc getNameLoc() const { return Loc; }
   SourceLoc getLoc() const { return Loc.getBaseNameLoc(); }
   SourceRange getSourceRange() const { return Loc.getSourceRange(); }
-
-  /// \brief Determine whether this declaration reference was immediately
-  /// specialized by <...>.
-  bool isSpecialized() const {
-    return OverloadedDeclRefExprBits.IsSpecialized;
-  }
 
   static bool classof(const Expr *E) {
     return E->getKind() == ExprKind::OverloadedDeclRef;
@@ -1526,7 +1491,6 @@ public:
       : Expr(ExprKind::UnresolvedDeclRef, /*Implicit=*/loc.isInvalid()),
         Name(name), Loc(loc) {
     UnresolvedDeclRefExprBits.DeclRefKind = static_cast<unsigned>(refKind);
-    UnresolvedDeclRefExprBits.IsSpecialized = false;
     UnresolvedDeclRefExprBits.FunctionRefKind =
       static_cast<unsigned>(Loc.isCompound() ? FunctionRefKind::Compound
                                              : FunctionRefKind::Unapplied);
@@ -1538,14 +1502,6 @@ public:
   DeclRefKind getRefKind() const {
     return static_cast<DeclRefKind>(UnresolvedDeclRefExprBits.DeclRefKind);
   }
-
-  void setSpecialized(bool specialized) {
-    UnresolvedDeclRefExprBits.IsSpecialized = specialized;
-  }
-
-  /// \brief Determine whether this declaration reference was immediately
-  /// specialized by <...>.
-  bool isSpecialized() const { return UnresolvedDeclRefExprBits.IsSpecialized; }
 
   /// Retrieve the kind of function reference.
   FunctionRefKind getFunctionRefKind() const {
@@ -2848,7 +2804,7 @@ public:
 };
 
 /// TupleShuffleExpr - This represents a permutation of a tuple value to a new
-/// tuple type.  The expression's type is known to be a tuple type.
+/// tuple type.
 ///
 /// If hasScalarSource() is true, the subexpression should be treated
 /// as if it were implicitly injected into a single-element tuple
@@ -2869,9 +2825,22 @@ public:
     CallerDefaultInitialize = -3
   };
 
-  enum SourceIsScalar_t : bool {
-    SourceIsTuple = false,
-    SourceIsScalar = true
+  enum TypeImpact {
+    /// The source value is a tuple which is destructured and modified to
+    /// create the result, which is a tuple.
+    TupleToTuple,
+
+    /// The source value is a tuple which is destructured and modified to
+    /// create the result, which is a scalar because it has one element and
+    /// no labels.
+    TupleToScalar,
+
+    /// The source value is an individual value (possibly one with tuple
+    /// type) which is inserted into a particular position in the result,
+    /// which is a tuple.
+    ScalarToTuple
+
+    // (TupleShuffleExprs are never created for a scalar-to-scalar conversion.)
   };
 
 private:
@@ -2895,29 +2864,35 @@ private:
 
 public:
   TupleShuffleExpr(Expr *subExpr, ArrayRef<int> elementMapping, 
-                   SourceIsScalar_t isSourceScalar,
+                   TypeImpact typeImpact,
                    ConcreteDeclRef defaultArgsOwner,
                    ArrayRef<unsigned> VariadicArgs,
-                   MutableArrayRef<Expr *> CallerDefaultArgs, Type ty)
+                   Type VarargsArrayTy,
+                   MutableArrayRef<Expr *> CallerDefaultArgs,
+                   Type ty)
     : ImplicitConversionExpr(ExprKind::TupleShuffle, subExpr, ty),
-      ElementMapping(elementMapping), VarargsArrayTy(),
+      ElementMapping(elementMapping), VarargsArrayTy(VarargsArrayTy),
       DefaultArgsOwner(defaultArgsOwner), VariadicArgs(VariadicArgs),
       CallerDefaultArgs(CallerDefaultArgs)
   {
-    TupleShuffleExprBits.IsSourceScalar = isSourceScalar;
+    TupleShuffleExprBits.TypeImpact = typeImpact;
   }
 
   ArrayRef<int> getElementMapping() const { return ElementMapping; }
 
-  /// Is the source expression scalar?
-  ///
-  /// This doesn't necessarily mean it's not a tuple; it just means
-  /// that it should be treated as if it were an element of a
-  /// single-element tuple for the purposes of interpreting behavior.
-  bool isSourceScalar() const { return TupleShuffleExprBits.IsSourceScalar; }
+  /// What is the type impact of this shuffle?
+  TypeImpact getTypeImpact() const {
+    return TypeImpact(TupleShuffleExprBits.TypeImpact);
+  }
 
-  /// Set the varargs array type to use.
-  void setVarargsArrayType(Type T) { VarargsArrayTy = T; }
+  bool isSourceScalar() const {
+    return getTypeImpact() == ScalarToTuple;
+  }
+
+  bool isResultScalar() const {
+    return getTypeImpact() == TupleToScalar;
+  }
+
   Type getVarargsArrayType() const {
     assert(!VarargsArrayTy.isNull());
     return VarargsArrayTy;
@@ -3152,6 +3127,51 @@ public:
     return E->getKind() == ExprKind::AnyHashableErasure;
   }
 };
+
+/// ConditionalBridgeFromObjCExpr - Bridge a value from a non-native
+/// representation.
+class ConditionalBridgeFromObjCExpr : public ImplicitConversionExpr {
+  ConcreteDeclRef Conversion;
+
+public:
+  ConditionalBridgeFromObjCExpr(Expr *subExpr, Type type,
+                                ConcreteDeclRef conversion)
+    : ImplicitConversionExpr(ExprKind::ConditionalBridgeFromObjC, subExpr, type),
+      Conversion(conversion) {
+  }
+
+  /// \brief Retrieve the conversion function.
+  ConcreteDeclRef getConversion() const {
+    return Conversion;
+  }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == ExprKind::ConditionalBridgeFromObjC;
+  }
+};
+
+/// BridgeFromObjCExpr - Bridge a value from a non-native representation.
+class BridgeFromObjCExpr : public ImplicitConversionExpr {
+public:
+  BridgeFromObjCExpr(Expr *subExpr, Type type)
+    : ImplicitConversionExpr(ExprKind::BridgeFromObjC, subExpr, type) {}
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == ExprKind::BridgeFromObjC;
+  }
+};
+
+/// BridgeToObjCExpr - Bridge a value to a non-native representation.
+class BridgeToObjCExpr : public ImplicitConversionExpr {
+public:
+  BridgeToObjCExpr(Expr *subExpr, Type type)
+    : ImplicitConversionExpr(ExprKind::BridgeToObjC, subExpr, type) {}
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == ExprKind::BridgeToObjC;
+  }
+};
+
 /// UnresolvedSpecializeExpr - Represents an explicit specialization using
 /// a type parameter list (e.g. "Vector<Int>") that has not been resolved.
 class UnresolvedSpecializeExpr : public Expr {
@@ -3353,7 +3373,10 @@ public:
   }
 
   /// \brief Retrieve the result type of this closure.
-  Type getResultType() const;
+  Type getResultType(llvm::function_ref<Type(const Expr *)> getType =
+                         [](const Expr *E) -> Type {
+    return E->getType();
+  }) const;
 
   /// \brief Return whether this closure is throwing when fully applied.
   bool isBodyThrowing() const;
@@ -4582,6 +4605,7 @@ public:
   class Component {
   public:
     enum class Kind: unsigned {
+      Invalid,
       UnresolvedProperty,
       UnresolvedSubscript,
       Property,
@@ -4603,25 +4627,28 @@ public:
     
     
     llvm::PointerIntPair<Expr *, 3, Kind> SubscriptIndexExprAndKind;
+    ArrayRef<Identifier> SubscriptLabels;
     Type ComponentType;
     SourceLoc Loc;
     
-    explicit Component(DeclNameOrRef decl,
+    explicit Component(ASTContext *ctxForCopyingLabels,
+                       DeclNameOrRef decl,
                        Expr *indexExpr,
+                       ArrayRef<Identifier> subscriptLabels,
                        Kind kind,
                        Type type,
-                       SourceLoc loc)
-      : Decl(decl), SubscriptIndexExprAndKind(indexExpr, kind),
-        ComponentType(type), Loc(loc)
-    {}
+                       SourceLoc loc);
     
   public:
-    Component() : Component({}, nullptr, (Kind)0, Type(), SourceLoc()) {}
+    Component()
+      : Component(nullptr, {}, nullptr, {}, Kind::Invalid, Type(), SourceLoc())
+    {}
     
     /// Create an unresolved component for a property.
     static Component forUnresolvedProperty(DeclName UnresolvedName,
                                            SourceLoc Loc) {
-      return Component(UnresolvedName, nullptr,
+      return Component(nullptr,
+                       UnresolvedName, nullptr, {},
                        Kind::UnresolvedProperty,
                        Type(),
                        Loc);
@@ -4640,15 +4667,20 @@ public:
     ///
     /// You shouldn't add new uses of this overload; use the one that takes a
     /// list of index arguments.
-    static Component forUnresolvedSubscriptWithPrebuiltIndexExpr(Expr *index,
-                                                                 SourceLoc loc){
+    static Component forUnresolvedSubscriptWithPrebuiltIndexExpr(
+                                         ASTContext &context,
+                                         Expr *index,
+                                         ArrayRef<Identifier> subscriptLabels,
+                                         SourceLoc loc) {
       
-      return Component({}, index, Kind::UnresolvedSubscript, Type(), loc);
+      return Component(&context,
+                       {}, index, subscriptLabels, Kind::UnresolvedSubscript,
+                       Type(), loc);
     }
     
     /// Create an unresolved optional force `!` component.
     static Component forUnresolvedOptionalForce(SourceLoc BangLoc) {
-      return Component({}, nullptr,
+      return Component(nullptr, {}, nullptr, {},
                        Kind::OptionalForce,
                        Type(),
                        BangLoc);
@@ -4656,7 +4688,7 @@ public:
     
     /// Create an unresolved optional chain `?` component.
     static Component forUnresolvedOptionalChain(SourceLoc QuestionLoc) {
-      return Component({}, nullptr,
+      return Component(nullptr, {}, nullptr, {},
                        Kind::OptionalChain,
                        Type(),
                        QuestionLoc);
@@ -4666,7 +4698,8 @@ public:
     static Component forProperty(ConcreteDeclRef property,
                                  Type propertyType,
                                  SourceLoc loc) {
-      return Component(property, nullptr, Kind::Property,
+      return Component(nullptr, property, nullptr, {},
+                       Kind::Property,
                        propertyType,
                        loc);
     }
@@ -4687,20 +4720,21 @@ public:
     /// You shouldn't add new uses of this overload; use the one that takes a
     /// list of index arguments.
     static Component forSubscriptWithPrebuiltIndexExpr(
-      ConcreteDeclRef subscript, Expr *index, Type elementType, SourceLoc loc) {
-      return Component(subscript, index, Kind::Subscript, elementType, loc);
-    }
+       ConcreteDeclRef subscript, Expr *index, ArrayRef<Identifier> labels,
+       Type elementType, SourceLoc loc);
     
     /// Create an optional-forcing `!` component.
     static Component forOptionalForce(Type forcedType, SourceLoc bangLoc) {
-      return Component({}, nullptr, Kind::OptionalForce, forcedType,
+      return Component(nullptr, {}, nullptr, {},
+                       Kind::OptionalForce, forcedType,
                        bangLoc);
     }
     
     /// Create an optional-chaining `?` component.
     static Component forOptionalChain(Type unwrappedType,
                                       SourceLoc questionLoc) {
-      return Component({}, nullptr, Kind::OptionalChain, unwrappedType,
+      return Component(nullptr, {}, nullptr, {},
+                       Kind::OptionalChain, unwrappedType,
                        questionLoc);
     }
     
@@ -4708,7 +4742,8 @@ public:
     /// syntax but may appear when the non-optional result of an optional chain
     /// is implicitly wrapped.
     static Component forOptionalWrap(Type wrappedType) {
-      return Component({}, nullptr, Kind::OptionalWrap, wrappedType,
+      return Component(nullptr, {}, nullptr, {},
+                       Kind::OptionalWrap, wrappedType,
                        SourceLoc());
     }
     
@@ -4720,12 +4755,36 @@ public:
       return SubscriptIndexExprAndKind.getInt();
     }
     
+    bool isValid() const {
+      return getKind() != Kind::Invalid;
+    }
+    
+    bool isResolved() const {
+      if (!getComponentType())
+        return false;
+      
+      switch (getKind()) {
+      case Kind::Subscript:
+      case Kind::OptionalChain:
+      case Kind::OptionalWrap:
+      case Kind::OptionalForce:
+      case Kind::Property:
+        return true;
+      
+      case Kind::UnresolvedSubscript:
+      case Kind::UnresolvedProperty:
+      case Kind::Invalid:
+        return false;
+      }
+    }
+    
     Expr *getIndexExpr() const {
       switch (getKind()) {
       case Kind::Subscript:
       case Kind::UnresolvedSubscript:
         return SubscriptIndexExprAndKind.getPointer();
         
+      case Kind::Invalid:
       case Kind::OptionalChain:
       case Kind::OptionalWrap:
       case Kind::OptionalForce:
@@ -4734,12 +4793,29 @@ public:
         llvm_unreachable("no index expr for this kind");
       }
     }
-    
+
+    ArrayRef<Identifier> getSubscriptLabels() const {
+      switch (getKind()) {
+      case Kind::Subscript:
+      case Kind::UnresolvedSubscript:
+        return SubscriptLabels;
+        
+      case Kind::Invalid:
+      case Kind::OptionalChain:
+      case Kind::OptionalWrap:
+      case Kind::OptionalForce:
+      case Kind::UnresolvedProperty:
+      case Kind::Property:
+        llvm_unreachable("no subscript labels for this kind");
+      }
+    }
+
     DeclName getUnresolvedDeclName() const {
       switch (getKind()) {
       case Kind::UnresolvedProperty:
         return Decl.UnresolvedName;
 
+      case Kind::Invalid:
       case Kind::Subscript:
       case Kind::UnresolvedSubscript:
       case Kind::OptionalChain:
@@ -4756,6 +4832,7 @@ public:
       case Kind::Subscript:
         return Decl.ResolvedDecl;
 
+      case Kind::Invalid:
       case Kind::UnresolvedProperty:
       case Kind::UnresolvedSubscript:
       case Kind::OptionalChain:

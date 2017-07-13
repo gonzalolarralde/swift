@@ -1,3 +1,15 @@
+//===--- ThreadLocalStorage.swift -----------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2014 - 2017 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+// See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
+//
+//===----------------------------------------------------------------------===//
+
 import SwiftShims
 
 // For testing purposes, a thread-safe counter to guarantee that destructors get
@@ -40,12 +52,7 @@ internal struct _ThreadLocalStorage {
   // compare unequal if a new StringCore happens to be created in the same
   // memory.
   //
-  // private
-  weak var associatedStringOwner: AnyObject? = nil
-  // private
-  var associatedBaseAddress: UnsafeMutableRawPointer? = nil
-  // private
-  var associatedCountAndFlags: UInt = 0
+  // TODO: unowned reference to string owner, base address, and _countAndFlags
 
   // private: Should only be called by _initializeThreadLocalStorage
   init(_uBreakIterator: OpaquePointer) {
@@ -67,31 +74,26 @@ internal struct _ThreadLocalStorage {
   }
 
   // Retrieve our thread's local uBreakIterator and set it up for the given
-  // StringCore. Checks our TLS cache to avoid excess text resetting.
+  // StringCore.
   static internal func getUBreakIterator(
     for core: _StringCore
+  ) -> OpaquePointer {
+    _sanityCheck(core._owner != nil || core._baseAddress != nil,
+      "invalid StringCore")
+    let corePtr: UnsafeMutablePointer<UTF16.CodeUnit> = core.startUTF16
+    return getUBreakIterator(
+      for: UnsafeBufferPointer(start: corePtr, count: core.count))
+  }
+  static internal func getUBreakIterator(
+    for bufPtr: UnsafeBufferPointer<UTF16.CodeUnit>
   ) -> OpaquePointer {
     let tlsPtr = getPointer()
     let brkIter = tlsPtr[0].uBreakIterator
 
-    _sanityCheck(core._owner != nil || core._baseAddress != nil,
-      "invalid StringCore")
-
-    // Check if we must reset the text
-    if tlsPtr[0].associatedStringOwner !== core._owner
-    || tlsPtr[0].associatedBaseAddress != core._baseAddress
-    || tlsPtr[0].associatedCountAndFlags != core._countAndFlags
-    {
-      // cache miss
-      var err = __swift_stdlib_U_ZERO_ERROR
-      let corePtr: UnsafeMutablePointer<UTF16.CodeUnit>
-      corePtr = core.startUTF16
-      __swift_stdlib_ubrk_setText(brkIter, corePtr, Int32(core.count), &err)
-      _precondition(err.isSuccess, "unexpected ubrk_setUText failure")
-      tlsPtr[0].associatedStringOwner = core._owner
-      tlsPtr[0].associatedBaseAddress = core._baseAddress
-      tlsPtr[0].associatedCountAndFlags = core._countAndFlags
-    }
+    var err = __swift_stdlib_U_ZERO_ERROR
+    __swift_stdlib_ubrk_setText(
+      brkIter, bufPtr.baseAddress!, Int32(bufPtr.count), &err)
+    _precondition(err.isSuccess, "unexpected ubrk_setUText failure")
 
     return brkIter
   }
@@ -104,8 +106,6 @@ internal func _destroyTLS(_ ptr: UnsafeMutableRawPointer?) {
     "_destroyTLS was called, but with nil...")
   let tlsPtr = ptr!.assumingMemoryBound(to: _ThreadLocalStorage.self)
   __swift_stdlib_ubrk_close(tlsPtr[0].uBreakIterator)
-  tlsPtr[0].associatedStringOwner = nil
-  tlsPtr[0].associatedBaseAddress = nil
   tlsPtr.deinitialize(count: 1)
   tlsPtr.deallocate(capacity: 1)
 

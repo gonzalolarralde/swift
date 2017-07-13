@@ -53,8 +53,6 @@ extension Collection where Element : Equatable {
   /// - Parameter element: An element to search for in the collection.
   /// - Returns: The first index where `element` is found. If `element` is not
   ///   found in the collection, returns `nil`.
-  ///
-  /// - SeeAlso: `index(where:)`
   @_inlineable
   public func index(of element: Element) -> Index? {
     if let result = _customIndexOfEquatableElement(element) {
@@ -93,8 +91,6 @@ extension Collection {
   /// - Returns: The index of the first element for which `predicate` returns
   ///   `true`. If no elements in the collection satisfy the given predicate,
   ///   returns `nil`.
-  ///
-  /// - SeeAlso: `index(of:)`
   @_inlineable
   public func index(
     where predicate: (Element) throws -> Bool
@@ -252,8 +248,6 @@ extension ${Self} where Element : Comparable {
   ///     // Prints "["Peter", "Kweku", "Kofi", "Akosua", "Abena"]"
   ///
   /// - Returns: A sorted array of the ${sequenceKind}'s elements.
-  ///
-  /// - SeeAlso: `sorted(by:)`, `sort()`
   @_inlineable
   public func sorted() -> [Element] {
     var result = ContiguousArray(self)
@@ -326,8 +320,6 @@ ${orderingExplanation}
   ///   argument should be ordered before its second argument; otherwise,
   ///   `false`.
   /// - Returns: A sorted array of the ${sequenceKind}'s elements.
-  ///
-  /// - SeeAlso: `sorted()`, `sort(by:)`
   @_inlineable
   public func sorted(
     by areInIncreasingOrder:
@@ -380,7 +372,7 @@ extension MutableCollection
       return ()
     }
     if didSortUnsafeBuffer == nil {
-      _introSort(&self, subRange: startIndex..<endIndex, by: <)
+      _introSort(&self, subRange: startIndex..<endIndex)
     }
   }
 }
@@ -465,106 +457,6 @@ ${orderingExplanation}
     }
   }
 }
-
-% for Self in '_Indexable', '_MutableIndexable':
-%{
-
-subscriptCommentPre = """\
-  /// Accesses a contiguous subrange of the collection's elements.
-  ///
-  /// The accessed slice uses the same indices for the same elements as the
-  /// original collection. Always use the slice's `startIndex` property
-  /// instead of assuming that its indices start at a particular value.
-  ///
-  /// This example demonstrates getting a slice of an array of strings, finding
-  /// the index of one of the strings in the slice, and then using that index
-  /// in the original array.
-  ///
-  ///     let streets = ["Adams", "Bryant", "Channing", "Douglas", "Evarts"]
-  ///     let streetsSlice = streets[2 ..< streets.endIndex]
-  ///     print(streetsSlice)
-  ///     // Prints "["Channing", "Douglas", "Evarts"]"
-  ///
-  ///     let index = streetsSlice.index(of: "Evarts")    // 4"""
-
-if 'Mutable' in Self:
-  subscriptCommentMid = """\
-  ///     streets[index!] = "Eustace"
-  ///     print(streets[index!])
-  ///     // Prints "Eustace\""""
-else:
-  subscriptCommentMid = """\
-  ///     print(streets[index!])
-  ///     // Prints "Evarts\""""
-
-subscriptCommentPost = """\
-  ///
-  /// - Parameter bounds: A range of the collection's indices. The bounds of
-  ///   the range must be valid indices of the collection."""
-}%
-// FIXME(ABI)#180 (Type checker)
-// WORKAROUND rdar://25214066 - should be on Collection
-extension ${Self} {
-${subscriptCommentPre}
-${subscriptCommentMid}
-${subscriptCommentPost}
-  @_inlineable
-  public subscript(bounds: ClosedRange<Index>) -> SubSequence {
-    get {
-      return self[
-        Range(
-          uncheckedBounds: (
-            lower: bounds.lowerBound,
-            upper: index(after: bounds.upperBound)))
-      ]
-    }
-%   if 'Mutable' in Self:
-    set {
-      self[
-        Range(
-          uncheckedBounds: (
-            lower: bounds.lowerBound,
-            upper: index(after: bounds.upperBound)))
-      ] = newValue
-    }
-%   end
-  }
-}
-
-// FIXME(ABI)#180 (Type checker)
-// WORKAROUND rdar://25214066 - should be on Collection
-extension ${Self} where Index : Strideable, Index.Stride : SignedInteger {
-${subscriptCommentPre}
-${subscriptCommentMid}
-${subscriptCommentPost}
-  @_inlineable
-  public subscript(bounds: CountableRange<Index>) -> SubSequence {
-    get {
-      return self[Range(bounds)]
-    }
-%   if 'Mutable' in Self:
-    set {
-      self[Range(bounds)] = newValue
-    }
-%   end
-  }
-
-${subscriptCommentPre}
-${subscriptCommentMid}
-${subscriptCommentPost}
-  @_inlineable
-  public subscript(bounds: CountableClosedRange<Index>) -> SubSequence {
-    get {
-      return self[ClosedRange(bounds)]
-    }
-%   if 'Mutable' in Self:
-    set {
-      self[ClosedRange(bounds)] = newValue
-    }
-%   end
-  }
-}
-% end
 
 //===--- Unavailable stuff ------------------------------------------------===//
 

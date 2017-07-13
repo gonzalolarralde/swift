@@ -364,7 +364,7 @@ SILValue SILBuilder::emitThickToObjCMetatype(SILLocation Loc, SILValue Op,
     if (metatypeInst->use_empty() &&
         metatypeInst->getParent() == getInsertionBB()) {
       auto origLoc = metatypeInst->getLoc();
-      metatypeInst->removeFromParent();
+      metatypeInst->eraseFromParent();
       return createMetatype(origLoc, Ty);
     }
   }
@@ -382,7 +382,7 @@ SILValue SILBuilder::emitObjCToThickMetatype(SILLocation Loc, SILValue Op,
     if (metatypeInst->use_empty() &&
         metatypeInst->getParent() == getInsertionBB()) {
       auto origLoc = metatypeInst->getLoc();
-      metatypeInst->removeFromParent();
+      metatypeInst->eraseFromParent();
       return createMetatype(origLoc, Ty);
     }
   }
@@ -426,4 +426,16 @@ void SILBuilder::addOpenedArchetypeOperands(SILInstruction *I) {
   if (I && I->getNumTypeDependentOperands() > 0) {
     OpenedArchetypes.addOpenedArchetypeOperands(I->getTypeDependentOperands());
   }
+}
+
+ValueMetatypeInst *SILBuilder::createValueMetatype(SILLocation Loc,
+                                                   SILType MetatypeTy,
+                                                   SILValue Base) {
+  assert(
+      Base->getType().isLoweringOf(
+          getModule(), MetatypeTy.castTo<MetatypeType>().getInstanceType()) &&
+      "value_metatype result must be formal metatype of the lowered operand "
+      "type");
+  return insert(new (F.getModule()) ValueMetatypeInst(getSILDebugLocation(Loc),
+                                                      MetatypeTy, Base));
 }

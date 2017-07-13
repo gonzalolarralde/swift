@@ -67,7 +67,7 @@ public protocol _MutableIndexable : _Indexable {
   /// - Parameter position: The position of the element to access. `position`
   ///   must be a valid index of the collection that is not equal to the
   ///   `endIndex` property.
-  subscript(position: Index) -> _Element { get set }
+  subscript(position: Index) -> Element { get set }
 
   /// Accesses a contiguous subrange of the collection's elements.
   ///
@@ -291,7 +291,7 @@ public protocol MutableCollection : _MutableIndexable, Collection
 
   /// Exchanges the values at the specified indices of the collection.
   ///
-  /// Both parameters must be valid indices of the collection that are not
+  /// Both parameters must be valid indices of the collection and not
   /// equal to `endIndex`. Passing the same index as both `i` and `j` has no
   /// effect.
   ///

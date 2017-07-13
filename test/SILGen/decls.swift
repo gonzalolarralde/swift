@@ -123,7 +123,8 @@ func load_from_global() -> Int {
   // CHECK: [[ACCESSOR:%[0-9]+]] = function_ref @_T05decls6globalSifau
   // CHECK: [[PTR:%[0-9]+]] = apply [[ACCESSOR]]()
   // CHECK: [[ADDR:%[0-9]+]] = pointer_to_address [[PTR]]
-  // CHECK: [[VALUE:%[0-9]+]] = load [trivial] [[ADDR]]
+  // CHECK: [[READ:%.*]] = begin_access [read] [dynamic] [[ADDR]] : $*Int
+  // CHECK: [[VALUE:%[0-9]+]] = load [trivial] [[READ]]
   // CHECK: return [[VALUE]]
 }
 
@@ -138,7 +139,9 @@ func store_to_global(x: Int) {
   // CHECK: [[ADDR:%[0-9]+]] = pointer_to_address [[PTR]]
   // CHECK: [[READ:%.*]] = begin_access [read] [unknown] [[PBX]] : $*Int
   // CHECK: [[COPY:%.*]] = load [trivial] [[READ]] : $*Int
-  // CHECK: assign [[COPY]] to [[ADDR]] : $*Int
+  // CHECK: [[WRITE:%.*]] = begin_access [modify] [dynamic] [[ADDR]] : $*Int
+  // CHECK: assign [[COPY]] to [[WRITE]] : $*Int
+  // CHECK: end_access [[WRITE]] : $*Int
   // CHECK: return
 }
 
@@ -164,22 +167,3 @@ struct StructWithStaticVar {
   init() {
   }
 }
-
-// <rdar://problem/17405715> lazy property crashes silgen of implicit memberwise initializer
-// CHECK-LABEL: // decls.StructWithLazyField.init
-// CHECK-NEXT: sil hidden @_T05decls19StructWithLazyFieldVACSiSg4once_tcfC : $@convention(method) (Optional<Int>, @thin StructWithLazyField.Type) -> @owned StructWithLazyField {
-struct StructWithLazyField {
-  lazy var once : Int = 42
-  let someProp = "Some value"
-}
-
-// <rdar://problem/21057425> Crash while compiling attached test-app.
-// CHECK-LABEL: // decls.test21057425
-func test21057425() {
-  var x = 0, y: Int = 0
-}
-
-func useImplicitDecls() {
-  _ = StructWithLazyField(once: 55)
-}
-
