@@ -5926,7 +5926,7 @@ Expr *ExprRewriter::coerceCallArguments(
   if (!argTuple && !argParen &&
       (params[0].getValueOwnership() == ValueOwnership::Default ||
        params[0].getValueOwnership() == ValueOwnership::InOut)) {
-    assert(newArgs.size() == 1);
+    // assert(newArgs.size() == 1);
     assert(!unlabeledTrailingClosureIndex);
     return newArgs[0];
   }
