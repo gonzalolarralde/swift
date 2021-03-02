@@ -2527,8 +2527,8 @@ void ConstraintSystem::bindOverloadType(
     // Before we drop the argument type on the floor, we need to constrain it
     // to having a literal conformance to ExpressibleByStringLiteral.  This
     // makes the index default to String if otherwise unconstrained.
-    assert(refFnType->getParams().size() == 1 &&
-           "subscript always has one arg");
+    assert(refFnType->getParams().size() >= 1 &&
+           "subscript always has at least one argument");
     auto argType = refFnType->getParams()[0].getPlainType();
 
     auto stringLiteral =
@@ -2536,6 +2536,14 @@ void ConstraintSystem::bindOverloadType(
                                  KnownProtocolKind::ExpressibleByStringLiteral);
     if (!stringLiteral)
       return;
+
+    // FIXME: There's no flag for default expr.
+    // Is this assertion relevant here, given that TypeCheckAttr already verified
+    // the elegibility of at least one of the overloads?
+    // for (size_t i = 1; i < params.size(); i++) {
+    //   assert(params[i].hasDefaultExpr() &&
+    //          "all params after member need a default expression");
+    // }
 
     addConstraint(ConstraintKind::LiteralConformsTo, argType,
                   stringLiteral->getDeclaredInterfaceType(), locator);
@@ -2553,12 +2561,22 @@ void ConstraintSystem::bindOverloadType(
   }
   case OverloadChoiceKind::KeyPathDynamicMemberLookup: {
     auto *fnType = openedType->castTo<FunctionType>();
-    assert(fnType->getParams().size() == 1 &&
-           "subscript always has one argument");
+    auto params = fnType->getParams();
+
+    assert(params.size() >= 1 &&
+           "subscript always has at least one argument");
     // Parameter type is KeyPath<T, U> where `T` is a root type
     // and U is a leaf type (aka member type).
     auto keyPathTy =
-        fnType->getParams()[0].getPlainType()->castTo<BoundGenericType>();
+        params[0].getPlainType()->castTo<BoundGenericType>();
+
+    // FIXME: There's no flag for default expr.
+    // Is this assertion relevant here, given that TypeCheckAttr already verified
+    // the elegibility of at least one of the overloads?
+    // for (size_t i = 1; i < params.size(); i++) {
+    //   assert(params[i].hasDefaultExpr() &&
+    //          "all params after keyPath need a default expression");
+    // }
 
     auto *keyPathDecl = keyPathTy->getAnyNominal();
     assert(isKnownKeyPathDecl(getASTContext(), keyPathDecl) &&

@@ -1091,8 +1091,8 @@ static void lookupVisibleDynamicMemberLookupDecls(
   auto &ctx = dc->getASTContext();
 
   // Lookup the `subscript(dynamicMember:)` methods in this type.
-  DeclNameRef subscriptName(
-      { ctx, DeclBaseName::createSubscript(), { ctx.Id_dynamicMember} });
+  DeclNameRef subscriptName({ DeclBaseName::createSubscript() });
+  // TODO: check if it's needed to assert here for DefaultExpr on the rest of the members
 
   SmallVector<ValueDecl *, 2> subscripts;
   dc->lookupQualified(baseType, subscriptName,

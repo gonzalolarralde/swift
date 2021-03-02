@@ -2096,8 +2096,9 @@ Diag<StringRef> AssignmentFailure::findDeclDiagonstic(ASTContext &ctx,
     // the tuple is implicit, then this was actually a @dynamicMemberLookup
     // access. Emit a more specific diagnostic.
     if (subscript->getIndex()->isImplicit() &&
-        subscript->getArgumentLabels().size() == 1 &&
+        subscript->getArgumentLabels().size() >= 1 &&
         subscript->getArgumentLabels().front() == ctx.Id_dynamicMember)
+      // TODO: check if it's needed to assert here for DefaultExpr on the rest of the members
       diagID = diag::assignment_dynamic_property_has_immutable_base;
 
     return diagID;

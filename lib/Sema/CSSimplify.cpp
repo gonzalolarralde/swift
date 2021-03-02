@@ -7192,8 +7192,7 @@ performMemberLookup(ConstraintKind constraintKind, DeclNameRef memberName,
       auto &ctx = getASTContext();
 
       // Recursively look up `subscript(dynamicMember:)` methods in this type.
-      DeclNameRef subscriptName(
-          { ctx, DeclBaseName::createSubscript(), { ctx.Id_dynamicMember } });
+      DeclNameRef subscriptName({ DeclBaseName::createSubscript() });
       auto subscripts = performMemberLookup(
           constraintKind, subscriptName, baseTy, functionRefKind, memberLocator,
           includeInaccessibleMembers);
@@ -7207,6 +7206,7 @@ performMemberLookup(ConstraintKind constraintKind, DeclNameRef memberName,
         if (isValidStringDynamicMemberLookup(SD, DC) || isKeyPathBased)
           result.addViable(OverloadChoice::getDynamicMemberLookup(
               baseTy, SD, name, isKeyPathBased));
+// FIXME: Shouldn't those non-valid results be marked as Unviable?
       }
 
       for (auto index : indices(subscripts.UnviableCandidates)) {
