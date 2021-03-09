@@ -61,6 +61,17 @@ struct R : Strideable {
   }
 }
 
+enum E : Int, Strideable {
+  case one = 1, two, three, four
+
+  func distance(to other: Self) -> Int {
+    return other.rawValue - self.rawValue
+  }
+  func advanced(by n: Int) -> Self {
+    return Self(rawValue: self.rawValue + n)!
+  }
+}
+
 StrideTestSuite.test("Double") {
   func checkOpen(from start: Double, to end: Double, by stepSize: Double, sum: Double) {
     // Work on Doubles
@@ -232,6 +243,21 @@ StrideTestSuite.test("StrideToIterator/past end") {
 
 StrideTestSuite.test("StrideToIterator/past end/backward") {
   strideIteratorTest(stride(from: 3, to: 0, by: -1), nonNilResults: 3)
+}
+
+StrideTestSuite.test("UInt8") {
+  // SR-2016
+  strideIteratorTest(stride(from:253 as UInt8, to: 255, by: 2), nonNilResults: 1)
+  strideIteratorTest(stride(from:253 as UInt8, through: 255, by: 2), nonNilResults: 2)
+  strideIteratorTest(stride(from:2 as UInt8, to: 0, by: -2), nonNilResults: 1)
+  strideIteratorTest(stride(from:2 as UInt8, through: 0, by: -2), nonNilResults: 2)
+}
+
+StrideTestSuite.test("Enum") {
+  strideIteratorTest(stride(from:E.one as UInt8, to: E.four, by: 2), nonNilResults: 1)
+  strideIteratorTest(stride(from:E.one as UInt8, through: E.four, by: 2), nonNilResults: 2)
+  strideIteratorTest(stride(from:E.four as UInt8, to: E.one, by: -2), nonNilResults: 1)
+  strideIteratorTest(stride(from:E.four UInt8, through: E.one, by: -2), nonNilResults: 2)
 }
 
 runAllTests()

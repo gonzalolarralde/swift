@@ -215,14 +215,14 @@ public struct StrideToIterator<Element: Strideable> {
   internal let _stride: Element.Stride
 
   @usableFromInline
-  internal var _current: (index: Int?, value: Element)
+  internal var _current: (index: Int?, value: Element?)
 
   @inlinable
   internal init(_start: Element, end: Element, stride: Element.Stride) {
     self._start = _start
     _end = end
     _stride = stride
-    _current = (0, _start)
+    _current = (nil, nil)
   }
 }
 
@@ -233,12 +233,18 @@ extension StrideToIterator: IteratorProtocol {
   /// Once `nil` has been returned, all subsequent calls return `nil`.
   @inlinable
   public mutating func next() -> Element? {
-    let result = _current.value
-    if _stride > 0 ? result >= _end : result <= _end {
-      return nil
+    if let value = _current.value {
+      let deltaEnd = value.distance(to: _end)
+      if _stride > 0 ? deltaEnd > _stride : deltaEnd < _stride {
+        _current = Element._step(after: (_current.index, value), from: _start, by: _stride)
+      } else {
+        return nil
+      }
+    } else {
+      _current = (0, _start)
     }
-    _current = Element._step(after: _current, from: _start, by: _stride)
-    return result
+
+    return _current.value
   }
 }
 
@@ -416,7 +422,7 @@ public struct StrideThroughIterator<Element: Strideable> {
   internal let _stride: Element.Stride
 
   @usableFromInline
-  internal var _current: (index: Int?, value: Element)
+  internal var _current: (index: Int?, value: Element?)
 
   @usableFromInline
   internal var _didReturnEnd: Bool = false
@@ -426,7 +432,7 @@ public struct StrideThroughIterator<Element: Strideable> {
     self._start = _start
     _end = end
     _stride = stride
-    _current = (0, _start)
+    _current = (nil, nil)
   }
 }
 
@@ -437,19 +443,18 @@ extension StrideThroughIterator: IteratorProtocol {
   /// Once `nil` has been returned, all subsequent calls return `nil`.
   @inlinable
   public mutating func next() -> Element? {
-    let result = _current.value
-    if _stride > 0 ? result >= _end : result <= _end {
-      // This check is needed because if we just changed the above operators
-      // to > and <, respectively, we might advance current past the end
-      // and throw it out of bounds (e.g. above Int.max) unnecessarily.
-      if result == _end && !_didReturnEnd {
-        _didReturnEnd = true
-        return result
+    if let value = _current.value {
+      let deltaEnd = value.distance(to: _end)
+      if _stride > 0 ? deltaEnd >= self._stride : deltaEnd <= self._stride {
+        _current = Element._step(after: (_current.index, value), from: _start, by: _stride)
+      } else {
+        return nil
       }
-      return nil
+    } else {
+      _current = (0, _start)
     }
-    _current = Element._step(after: _current, from: _start, by: _stride)
-    return result
+
+    return _current.value
   }
 }
 
