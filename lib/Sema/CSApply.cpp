@@ -3334,8 +3334,9 @@ namespace {
       auto declTy = solution.simplifyType(overload.openedFullType);
       auto subscriptTy = declTy->castTo<FunctionType>()->getResult();
       auto refFnType = subscriptTy->castTo<FunctionType>();
-      assert(refFnType->getParams().size() == 1 &&
-             "subscript always has one arg");
+      assert(refFnType->getParams().size() >= 1 &&
+             "subscript always has at least one arg");
+      // TODO: check if it's needed to assert here for DefaultExpr on the rest of the members
       return refFnType->getParams()[0].getPlainType();
     }
 
@@ -5925,7 +5926,7 @@ Expr *ExprRewriter::coerceCallArguments(
   if (!argTuple && !argParen &&
       (params[0].getValueOwnership() == ValueOwnership::Default ||
        params[0].getValueOwnership() == ValueOwnership::InOut)) {
-    assert(newArgs.size() == 1);
+    // assert(newArgs.size() == 1);
     assert(!unlabeledTrailingClosureIndex);
     return newArgs[0];
   }

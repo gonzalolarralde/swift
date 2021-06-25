@@ -322,6 +322,10 @@ public:
   /// Returns true if this is a non-null and completed argument list.
   bool isValid() const {
     assert(!isNull());
+    if (Arguments.size() != Params.size()) {
+       printf("DANG %zu %zu", Arguments.size(), Params.size()); fflush(0);
+    }
+
     return Arguments.size() == Params.size();
   }
 
