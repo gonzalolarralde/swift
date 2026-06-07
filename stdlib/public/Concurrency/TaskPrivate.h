@@ -894,7 +894,11 @@ struct AsyncTask::PrivateStorage {
   TaskDependencyStatusRecord *dependencyRecord = nullptr;
 
   // The lock used to protect more complicated operations on the task status.
+#if SWIFT_CONCURRENCY_EMBEDDED
+  Mutex statusLock;
+#else
   RecursiveMutex statusLock;
+#endif
 
   // Always create an async task with max priority in ActiveTaskStatus = base
   // priority. It will be updated later if needed.
