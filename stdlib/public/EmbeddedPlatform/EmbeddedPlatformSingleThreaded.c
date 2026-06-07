@@ -44,6 +44,65 @@ SWIFT_EMBEDDED_PLATFORM_WEAK int _swift_mutex_tryLock(__swift_mutex_t *mutex) {
   return 1;
 }
 
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_mutex_unsafeLock(__swift_mutex_t *mutex) {
+  _swift_mutex_lock(mutex);
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_mutex_unsafeUnlock(__swift_mutex_t *mutex) {
+  _swift_mutex_unlock(mutex);
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_lazy_mutex_destroy(
+    __swift_lazy_mutex_t *mutex) {
+  (void)mutex;
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_lazy_mutex_lock(
+    __swift_lazy_mutex_t *mutex) {
+  (void)mutex;
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_lazy_mutex_unlock(
+    __swift_lazy_mutex_t *mutex) {
+  (void)mutex;
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK int _swift_lazy_mutex_tryLock(
+    __swift_lazy_mutex_t *mutex) {
+  (void)mutex;
+  return 1;
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_lazy_mutex_unsafeLock(
+    __swift_lazy_mutex_t *mutex) {
+  _swift_lazy_mutex_lock(mutex);
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_lazy_mutex_unsafeUnlock(
+    __swift_lazy_mutex_t *mutex) {
+  _swift_lazy_mutex_unlock(mutex);
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_recursive_mutex_init(
+    __swift_recursive_mutex_t *mutex, int checked) {
+  _swift_mutex_init((__swift_mutex_t *)mutex, checked);
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_recursive_mutex_destroy(
+    __swift_recursive_mutex_t *mutex) {
+  _swift_mutex_destroy((__swift_mutex_t *)mutex);
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_recursive_mutex_lock(
+    __swift_recursive_mutex_t *mutex) {
+  _swift_mutex_lock((__swift_mutex_t *)mutex);
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_recursive_mutex_unlock(
+    __swift_recursive_mutex_t *mutex) {
+  _swift_mutex_unlock((__swift_mutex_t *)mutex);
+}
+
 SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_condition_init(__swift_condition_t *condition) {
   if (condition)
     *condition = 0;

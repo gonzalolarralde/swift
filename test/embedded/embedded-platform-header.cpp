@@ -11,6 +11,8 @@ static_assert(__SWIFT_TLS_KEY_COUNT >= 1, "reserved TLS keys must exist");
 
 void useEmbeddedPlatformHooks() {
   __swift_mutex_t m = 0;
+  __swift_lazy_mutex_t lazy = 0;
+  __swift_recursive_mutex_t recursive = 0;
   __swift_condition_t cond = 0;
   __swift_once_t once = 0;
   __swift_tls_key_t key = 0;
@@ -24,6 +26,20 @@ void useEmbeddedPlatformHooks() {
   _swift_mutex_lock(&m);
   _swift_mutex_unlock(&m);
   (void)_swift_mutex_tryLock(&m);
+  _swift_mutex_unsafeLock(&m);
+  _swift_mutex_unsafeUnlock(&m);
+
+  _swift_lazy_mutex_lock(&lazy);
+  _swift_lazy_mutex_unlock(&lazy);
+  (void)_swift_lazy_mutex_tryLock(&lazy);
+  _swift_lazy_mutex_unsafeLock(&lazy);
+  _swift_lazy_mutex_unsafeUnlock(&lazy);
+  _swift_lazy_mutex_destroy(&lazy);
+
+  _swift_recursive_mutex_init(&recursive, 0);
+  _swift_recursive_mutex_lock(&recursive);
+  _swift_recursive_mutex_unlock(&recursive);
+  _swift_recursive_mutex_destroy(&recursive);
 
   _swift_condition_init(&cond);
   _swift_condition_lock(&cond);

@@ -89,83 +89,62 @@ inline bool mutex_try_lock(mutex_handle &handle) {
 }
 
 inline void mutex_unsafe_lock(mutex_handle &handle) {
-  _swift_mutex_lock(&handle);
+  _swift_mutex_unsafeLock(&handle);
 }
 
 inline void mutex_unsafe_unlock(mutex_handle &handle) {
-  _swift_mutex_unlock(&handle);
+  _swift_mutex_unsafeUnlock(&handle);
 }
 
 // .. Lazy mutex support .....................................................
 
-struct lazy_mutex_handle {
-  __swift_once_t once;
-  mutex_handle mutex;
-};
+using lazy_mutex_handle = __swift_lazy_mutex_t;
 
-#define SWIFT_LAZY_MUTEX_INITIALIZER {0, 0}
-
-inline void lazy_mutex_init(void *ctx) {
-  auto *handle = static_cast<lazy_mutex_handle *>(ctx);
-  mutex_init(handle->mutex);
-}
-
-inline void lazy_mutex_ensure_initialized(lazy_mutex_handle &handle) {
-  _swift_once(&handle.once, lazy_mutex_init, &handle);
-}
+#define SWIFT_LAZY_MUTEX_INITIALIZER 0
 
 inline void lazy_mutex_destroy(lazy_mutex_handle &handle) {
-  if (handle.once)
-    mutex_destroy(handle.mutex);
+  _swift_lazy_mutex_destroy(&handle);
 }
 
 inline void lazy_mutex_lock(lazy_mutex_handle &handle) {
-  lazy_mutex_ensure_initialized(handle);
-  mutex_lock(handle.mutex);
+  _swift_lazy_mutex_lock(&handle);
 }
 
 inline void lazy_mutex_unlock(lazy_mutex_handle &handle) {
-  mutex_unlock(handle.mutex);
+  _swift_lazy_mutex_unlock(&handle);
 }
 
 inline bool lazy_mutex_try_lock(lazy_mutex_handle &handle) {
-  lazy_mutex_ensure_initialized(handle);
-  return mutex_try_lock(handle.mutex);
+  return _swift_lazy_mutex_tryLock(&handle) != 0;
 }
 
 inline void lazy_mutex_unsafe_lock(lazy_mutex_handle &handle) {
-  lazy_mutex_ensure_initialized(handle);
-  mutex_unsafe_lock(handle.mutex);
+  _swift_lazy_mutex_unsafeLock(&handle);
 }
 
 inline void lazy_mutex_unsafe_unlock(lazy_mutex_handle &handle) {
-  mutex_unsafe_unlock(handle.mutex);
+  _swift_lazy_mutex_unsafeUnlock(&handle);
 }
 
 // .. Recursive mutex support ................................................
-//
-// EmbeddedPlatform intentionally does not expose recursive mutexes. Keep the
-// C++ Threading shape available for code that includes the header, but map it
-// to the same non-recursive primitive. Embedded Concurrency should not rely on
-// recursive acquisition.
 
-using recursive_mutex_handle = mutex_handle;
+using recursive_mutex_handle = __swift_recursive_mutex_t;
 
 inline void recursive_mutex_init(recursive_mutex_handle &handle,
                                  bool checked = false) {
-  mutex_init(handle, checked);
+  _swift_recursive_mutex_init(&handle, checked ? 1 : 0);
 }
 
 inline void recursive_mutex_destroy(recursive_mutex_handle &handle) {
-  mutex_destroy(handle);
+  _swift_recursive_mutex_destroy(&handle);
 }
 
 inline void recursive_mutex_lock(recursive_mutex_handle &handle) {
-  mutex_lock(handle);
+  _swift_recursive_mutex_lock(&handle);
 }
 
 inline void recursive_mutex_unlock(recursive_mutex_handle &handle) {
-  mutex_unlock(handle);
+  _swift_recursive_mutex_unlock(&handle);
 }
 
 // .. ConditionVariable support ..............................................

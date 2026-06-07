@@ -13,6 +13,8 @@ static void swiftPlatformOnceFn(void *context) {
 
 void exerciseSingleThreadedShim() {
   __swift_mutex_t mutex = 0;
+  __swift_lazy_mutex_t lazyMutex = 0;
+  __swift_recursive_mutex_t recursiveMutex = 0;
   __swift_condition_t condition = 0;
   __swift_once_t once = 0;
   __swift_tls_key_t key = 0;
@@ -23,6 +25,20 @@ void exerciseSingleThreadedShim() {
   _swift_mutex_lock(&mutex);
   _swift_mutex_unlock(&mutex);
   (void)_swift_mutex_tryLock(&mutex);
+  _swift_mutex_unsafeLock(&mutex);
+  _swift_mutex_unsafeUnlock(&mutex);
+
+  _swift_lazy_mutex_lock(&lazyMutex);
+  _swift_lazy_mutex_unlock(&lazyMutex);
+  (void)_swift_lazy_mutex_tryLock(&lazyMutex);
+  _swift_lazy_mutex_unsafeLock(&lazyMutex);
+  _swift_lazy_mutex_unsafeUnlock(&lazyMutex);
+  _swift_lazy_mutex_destroy(&lazyMutex);
+
+  _swift_recursive_mutex_init(&recursiveMutex, 0);
+  _swift_recursive_mutex_lock(&recursiveMutex);
+  _swift_recursive_mutex_unlock(&recursiveMutex);
+  _swift_recursive_mutex_destroy(&recursiveMutex);
 
   _swift_condition_init(&condition);
   _swift_condition_lock(&condition);

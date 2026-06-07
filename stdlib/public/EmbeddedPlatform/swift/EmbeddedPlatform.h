@@ -5,8 +5,8 @@
  * Copyright (c) 2026 Apple Inc. and the Swift project authors
  * Licensed under Apache License v2.0 with Runtime Library Exception
  *
- * See https://swift.org/LICENSE.txt for license information
- * See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
+ * See https: *swift.org/LICENSE.txt for license information
+ * See https: *swift.org/CONTRIBUTORS.txt for the list of Swift project authors
  *
  *===----------------------------------------------------------------------=== *
  *
@@ -55,14 +55,12 @@ typedef int64_t __swift_int64_t;
 #endif
 
 typedef __swift_uintptr_t __swift_mutex_t;
+typedef __swift_uintptr_t __swift_lazy_mutex_t;
+typedef __swift_uintptr_t __swift_recursive_mutex_t;
 typedef __swift_uintptr_t __swift_condition_t;
 typedef __swift_uintptr_t __swift_once_t;
 typedef __swift_uintptr_t __swift_tls_key_t;
 typedef __swift_uintptr_t __swift_thread_id_t;
-
-#ifndef __has_feature
-#define __has_feature(x) 0
-#endif
 
 /**
  * Number of reserved TLS keys used by Embedded Swift runtime components.
@@ -72,7 +70,7 @@ typedef __swift_uintptr_t __swift_thread_id_t;
  */
 #define __SWIFT_TLS_KEY_COUNT 8
 
-#if __has_feature(nullability)
+#if defined(__has_feature) && __has_feature(nullability)
 #define EMBEDDED_SWIFT_NONNULL _Nonnull
 #define EMBEDDED_SWIFT_NULLABLE _Nullable
 #else
@@ -82,7 +80,7 @@ typedef __swift_uintptr_t __swift_thread_id_t;
 
 typedef void (*__swift_tls_dtor_t)(void * EMBEDDED_SWIFT_NULLABLE);
 
-#if __has_feature(bounds_attributes) || __has_feature(bounds_safety_attributes)
+#if defined(__has_feature) && (__has_feature(bounds_attributes) || __has_feature(bounds_safety_attributes))
 #define EMBEDDED_SWIFT_COUNTED_BY(N) __attribute__((__counted_by__(N)))
 #define EMBEDDED_SWIFT_SIZED_BY(N) __attribute__((__sized_by__(N)))
 #define EMBEDDED_SWIFT_SINGLE __attribute__((__single__))
@@ -290,6 +288,87 @@ void _swift_mutex_unlock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
  * [REQUIRED] Returns nonzero if the mutex was acquired, or zero if it was not acquired.
  */
 int _swift_mutex_tryLock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Acquires a mutex from error paths. Defaults may call
+ * `_swift_mutex_lock`.
+ */
+void _swift_mutex_unsafeLock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Releases a mutex from error paths. Defaults may call
+ * `_swift_mutex_unlock`.
+ */
+void _swift_mutex_unsafeUnlock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Destroys a lazily initialized mutex. Defaults may no-op when lazy
+ * mutexes do not allocate resources.
+ */
+void _swift_lazy_mutex_destroy(
+    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Acquires a lazily initialized mutex. Defaults may use the base
+ * mutex behavior.
+ */
+void _swift_lazy_mutex_lock(
+    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Releases a lazily initialized mutex. Defaults may use the base
+ * mutex behavior.
+ */
+void _swift_lazy_mutex_unlock(
+    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Attempts to acquire a lazily initialized mutex without blocking.
+ * Defaults may use the base mutex behavior.
+ */
+int _swift_lazy_mutex_tryLock(
+    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Acquires a lazy mutex from error paths. Defaults may call
+ * `_swift_lazy_mutex_lock`.
+ */
+void _swift_lazy_mutex_unsafeLock(
+    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Releases a lazy mutex from error paths. Defaults may call
+ * `_swift_lazy_mutex_unlock`.
+ */
+void _swift_lazy_mutex_unsafeUnlock(
+    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Initializes a recursive mutex. Defaults may map this to the base
+ * mutex behavior for single-threaded configurations.
+ */
+void _swift_recursive_mutex_init(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex,
+    int checked);
+
+/**
+ * [OPTIONAL] Destroys a recursive mutex initialized by
+ * `_swift_recursive_mutex_init`.
+ */
+void _swift_recursive_mutex_destroy(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Acquires a recursive mutex.
+ */
+void _swift_recursive_mutex_lock(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Releases a recursive mutex.
+ */
+void _swift_recursive_mutex_unlock(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
 
 /**
  * [REQUIRED] Initializes a condition variable with an associated lock.
