@@ -18,6 +18,7 @@ void exerciseSingleThreadedShim() {
   __swift_condition_t condition = 0;
   __swift_once_t once = 0;
   __swift_tls_key_t key = 0;
+  __swift_tls_key_t allocatedKey = 0;
   void *value = (void *)0x1;
 
   _swift_mutex_init(&mutex, 0);
@@ -53,6 +54,9 @@ void exerciseSingleThreadedShim() {
   _swift_once(&once, swiftPlatformOnceFn, 0);
 
   (void)_swift_tls_init(key, 0);
+  (void)_swift_tls_alloc(&allocatedKey, 0);
+  _swift_tls_set(allocatedKey, value);
+  (void)_swift_tls_get(allocatedKey);
   _swift_tls_set(key, value);
   (void)_swift_tls_get(key);
 

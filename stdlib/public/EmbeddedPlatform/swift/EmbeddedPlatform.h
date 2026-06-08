@@ -451,6 +451,15 @@ int _swift_tls_init(__swift_tls_key_t key,
                     __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
 
 /**
+ * Allocates a dynamic TLS key and writes it into `key`.
+ *
+ * [REQUIRED] Returns nonzero if the key was allocated, or zero on failure.
+ */
+int _swift_tls_alloc(
+    __swift_tls_key_t * EMBEDDED_SWIFT_NONNULL key,
+    __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
+
+/**
  * [REQUIRED] Returns the value stored for a reserved TLS key in the current
  * execution context, or NULL if no value has been stored.
  */

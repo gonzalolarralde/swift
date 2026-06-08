@@ -18,7 +18,13 @@
 #define SWIFT_EMBEDDED_PLATFORM_WEAK
 #endif
 
-static void *ReservedTLS[__SWIFT_TLS_KEY_COUNT];
+#define SWIFT_EMBEDDED_PLATFORM_DYNAMIC_TLS_KEY_COUNT 16
+#define SWIFT_EMBEDDED_PLATFORM_TLS_KEY_COUNT \
+  (__SWIFT_TLS_KEY_COUNT + SWIFT_EMBEDDED_PLATFORM_DYNAMIC_TLS_KEY_COUNT)
+
+static void *TLS[SWIFT_EMBEDDED_PLATFORM_TLS_KEY_COUNT];
+static __swift_tls_dtor_t TLSDtors[SWIFT_EMBEDDED_PLATFORM_TLS_KEY_COUNT];
+static __swift_tls_key_t NextDynamicTLSKey = __SWIFT_TLS_KEY_COUNT;
 static void *exclusivityTLS = 0;
 
 SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_mutex_init(__swift_mutex_t *mutex, int checked) {
@@ -157,21 +163,32 @@ SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_once(__swift_once_t *predicate, void (*
 
 SWIFT_EMBEDDED_PLATFORM_WEAK int _swift_tls_init(__swift_tls_key_t key,
                                                  __swift_tls_dtor_t destructor) {
-  (void)destructor;
-  return key < __SWIFT_TLS_KEY_COUNT;
+  if (key >= SWIFT_EMBEDDED_PLATFORM_TLS_KEY_COUNT)
+    return 0;
+  TLSDtors[key] = destructor;
+  return 1;
+}
+
+SWIFT_EMBEDDED_PLATFORM_WEAK int _swift_tls_alloc(
+    __swift_tls_key_t *key, __swift_tls_dtor_t destructor) {
+  if (!key || NextDynamicTLSKey >= SWIFT_EMBEDDED_PLATFORM_TLS_KEY_COUNT)
+    return 0;
+  *key = NextDynamicTLSKey++;
+  TLSDtors[*key] = destructor;
+  return 1;
 }
 
 SWIFT_EMBEDDED_PLATFORM_WEAK void *_swift_tls_get(__swift_tls_key_t key) {
-  if (key >= __SWIFT_TLS_KEY_COUNT)
+  if (key >= SWIFT_EMBEDDED_PLATFORM_TLS_KEY_COUNT)
     return 0;
-  return ReservedTLS[key];
+  return TLS[key];
 }
 
 SWIFT_EMBEDDED_PLATFORM_WEAK void _swift_tls_set(__swift_tls_key_t key,
                                                  void *value) {
-  if (key >= __SWIFT_TLS_KEY_COUNT)
+  if (key >= SWIFT_EMBEDDED_PLATFORM_TLS_KEY_COUNT)
     return;
-  ReservedTLS[key] = value;
+  TLS[key] = value;
 }
 
 SWIFT_EMBEDDED_PLATFORM_WEAK void *_swift_getExclusivityTLS(void) {

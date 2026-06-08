@@ -1,8 +1,8 @@
-//===--- ThreadEmbeddedImpl.h - Embedded platform threading glue ---*- C++ -*-===//
+//==--- ThreadEmbeddedImpl.h - Embedded platform threading glue ---- -*-C++ -*-===//
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2014 - 2022 Apple Inc. and the Swift project authors
+// Copyright (c) 2014 - 2026 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -28,7 +28,6 @@
 
 #include "chrono_utils.h"
 #include "swift/EmbeddedPlatform.h"
-#include "swift/Threading/TLSKeys.h"
 
 // Route SWIFT_THREAD_LOCAL_TYPE(TYPE, KEY) through tls_get/tls_set below.
 #define SWIFT_THREADING_USE_RESERVED_TLS_KEYS 1
@@ -219,9 +218,7 @@ inline bool tls_init(tls_key_t key, tls_dtor_t dtor) {
 }
 
 inline bool tls_alloc(tls_key_t &key, tls_dtor_t dtor) {
-  (void)key;
-  (void)dtor;
-  return false;
+  return _swift_tls_alloc(&key, dtor) != 0;
 }
 
 inline void *tls_get(tls_key_t key) {

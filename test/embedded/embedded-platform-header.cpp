@@ -16,6 +16,7 @@ void useEmbeddedPlatformHooks() {
   __swift_condition_t cond = 0;
   __swift_once_t once = 0;
   __swift_tls_key_t key = 0;
+  __swift_tls_key_t allocatedKey = 0;
   __swift_thread_id_t threadId = 0;
   void *ptr = nullptr;
   void *low = nullptr;
@@ -57,6 +58,7 @@ void useEmbeddedPlatformHooks() {
   }, nullptr);
 
   _swift_tls_init(key, nullptr);
+  (void)_swift_tls_alloc(&allocatedKey, nullptr);
   _swift_tls_set(key, ptr);
   (void)_swift_tls_get(key);
 

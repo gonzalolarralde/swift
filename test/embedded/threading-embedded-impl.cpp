@@ -45,6 +45,11 @@ void exerciseEmbeddedThreading() {
         reinterpret_cast<std::uint8_t *>(value)[0] = 0;
       },
       nullptr);
+
+  swift::threading_impl::tls_key_t key{};
+  (void)swift::threading_impl::tls_alloc(key, nullptr);
+  swift::threading_impl::tls_set(key, nullptr);
+  (void)swift::threading_impl::tls_get(key);
 }
 
 } // namespace
