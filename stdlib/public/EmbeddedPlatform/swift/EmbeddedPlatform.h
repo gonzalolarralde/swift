@@ -33,7 +33,7 @@ typedef __SIZE_TYPE__ __swift_size_t;
 typedef size_t __swift_size_t;
 #endif
 
-#if __has_feature(nullability)
+#if defined(__has_feature) && __has_feature(nullability)
 #define EMBEDDED_SWIFT_NONNULL _Nonnull
 #define EMBEDDED_SWIFT_NULLABLE _Nullable
 #else
@@ -51,6 +51,12 @@ typedef size_t __swift_size_t;
 #define EMBEDDED_SWIFT_SINGLE
 #endif
 
+#include "EmbeddedPlatformThreading.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Allocates memory and places the resulting pointer in `*memptr`.
  *
@@ -62,7 +68,7 @@ typedef size_t __swift_size_t;
  *
  * Returns 0 on success, any other value on failure.
  *
- * This function is required when using any Embedded Swift facility that
+ * [REQUIRED] This function is required when using any Embedded Swift facility that
  * requires memory allocation from the heap, whether explicitly (e.g., via the
  * `allocate` operation on unsafe pointers) or implicitly (e.g., creating a
  * copy-on-write array or an instance of a class type).
@@ -83,7 +89,7 @@ int _swift_alignedAllocate(void * EMBEDDED_SWIFT_NULLABLE * EMBEDDED_SWIFT_NONNU
  *     be a power of at least as large as `sizeof(void *)`, or be zero to
  *     indicate that the alignment is not known.
  *
- * This function is required when using any Embedded Swift facility that
+ * [REQUIRED] This function is required when using any Embedded Swift facility that
  * requires memory allocation from the heap, whether explicitly (e.g., via the
  * `allocate` operation on unsafe pointers) or implicitly (e.g., creating a
  * copy-on-write array or an instance of a class type).
@@ -103,7 +109,7 @@ void _swift_alignedFree(void * EMBEDDED_SWIFT_NONNULL ptr, __swift_size_t alignm
  *   - `typeId`: an identifier used by a typed allocator to e.g. place the
  *     allocation in a particular bucket.
  *
- * This function is required when using any Embedded Swift facility that
+ * [REQUIRED] This function is required when using any Embedded Swift facility that
  * requires typed memory allocation from the heap, e.g. class instance
  * allocations when the TypedAllocation feature is enabled.
  *
@@ -124,7 +130,7 @@ void _swift_typedAllocate(
  *
  * Returns the number of characters that were written.
  *
- * This function is required when using the Embedded Swift print() facilities.
+ * [REQUIRED] This function is required when using the Embedded Swift print() facilities.
  *
  * This function can be implemented as a call to fwrite or printf with the
  * specified number of code points.
@@ -140,7 +146,7 @@ int _swift_writeToStandardOutput(
  *   - `buffer`: the buffer into which the random bytes should be generated.
  *   - `nbytes`: the number of bytes that should be generated into the buffer.
  *
- * This function is required when using Swift's SystemRandomNumberGenerator, the
+ * [REQUIRED] This function is required when using Swift's SystemRandomNumberGenerator, the
  * default random number generator used for shuffling elements and producing
  * random values. While this function is encouraged to use a cryptographically
  * secure algorithm, it is not required to do so.
@@ -160,7 +166,7 @@ void _swift_generateRandom(void * EMBEDDED_SWIFT_NONNULL EMBEDDED_SWIFT_SIZED_BY
  *   - `buffer`: the buffer into which the random bytes should be generated.
  *   - `nbytes`: the number of bytes that should be generated into the buffer.
  *
- * This function is required when using Swift's hashed collections, such as Set
+ * [REQUIRED] This function is required when using Swift's hashed collections, such as Set
  * and Dictionary, to provide random seeding for the hash functions. Random
  * seeding makes hash values differ from one execute to the next, mitigating
  * against denial-of-service attacks that target a known hash function. The
@@ -186,7 +192,7 @@ void _swift_generateRandomHashSeed(void * EMBEDDED_SWIFT_NONNULL EMBEDDED_SWIFT_
  * need to be in thread-local storage (e.g., using C11 `_Thread_local`) or a
  * similar facility.
  *
- * This function is required when using Swift's dynamic exclusivity checking,
+ * [REQUIRED] This function is required when using Swift's dynamic exclusivity checking,
  * which is enabled by the Swift compiler option `-enforce-exclusivity=checked`
  * and required when the compiler cannot statically prove that all accesses to a
  * given variable (such as a global variable or a stored instance property of a
@@ -203,8 +209,8 @@ void * EMBEDDED_SWIFT_NULLABLE _swift_getExclusivityTLS(void);
  *     `_swift_getExclusivityTLS` on the same thread (without an intervening
  *     call to `_swift_setExclusivityTLS`) shall return `ptr`.
  *
- * See `_swift_getExclusivityTLS` for more information about dynamic exclusivity
- * checking.
+ * [REQUIRED] See `_swift_getExclusivityTLS` for more information about dynamic
+ * exclusivity checking.
  */
 void _swift_setExclusivityTLS(void * EMBEDDED_SWIFT_NULLABLE ptr);
 
@@ -216,10 +222,14 @@ void _swift_setExclusivityTLS(void * EMBEDDED_SWIFT_NULLABLE ptr);
  *
  * This function must not return.
  *
- * This function can be implemented directly with a call to the POSIX exit()
+ * [REQUIRED] This function can be implemented directly with a call to the POSIX exit()
  * function.
  */
 void _swift_exit(int code);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #undef EMBEDDED_SWIFT_SINGLE
 #undef EMBEDDED_SWIFT_SIZED_BY

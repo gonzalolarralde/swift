@@ -1,17 +1,27 @@
 # Install the EmbeddedPlatform header into "swift".
 
 if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
-  add_custom_command(
-      OUTPUT "${SWIFT_INCLUDE_DIR}/swift/EmbeddedPlatform.h"
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/swift/EmbeddedPlatform.h"
-      COMMAND "${CMAKE_COMMAND}" "-E" "copy" "${CMAKE_CURRENT_SOURCE_DIR}/swift/EmbeddedPlatform.h" "${SWIFT_INCLUDE_DIR}/swift")
+  set(embedded_swift_platform_headers
+      EmbeddedPlatform.h
+      EmbeddedPlatformThreading.h)
+
+  set(copied_embedded_swift_platform_headers)
+  foreach(header ${embedded_swift_platform_headers})
+    add_custom_command(
+        OUTPUT "${SWIFT_INCLUDE_DIR}/swift/${header}"
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/swift/${header}"
+        COMMAND "${CMAKE_COMMAND}" "-E" "copy" "${CMAKE_CURRENT_SOURCE_DIR}/swift/${header}" "${SWIFT_INCLUDE_DIR}/swift")
+    list(APPEND copied_embedded_swift_platform_headers
+        "${SWIFT_INCLUDE_DIR}/swift/${header}")
+  endforeach()
 
   add_custom_target("copy_embedded_swift_platform_header"
-      DEPENDS "${SWIFT_INCLUDE_DIR}/swift/EmbeddedPlatform.h"
-      COMMENT "Copying Embedded Swift platform header to ${SWIFT_INCLUDE_DIR}/swift")
+      DEPENDS ${copied_embedded_swift_platform_headers}
+      COMMENT "Copying Embedded Swift platform headers to ${SWIFT_INCLUDE_DIR}/swift")
 
   swift_install_in_component(FILES
       "${CMAKE_CURRENT_SOURCE_DIR}/swift/EmbeddedPlatform.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/swift/EmbeddedPlatformThreading.h"
       DESTINATION "include/swift"
       COMPONENT stdlib)
 
@@ -20,6 +30,9 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
 
   add_custom_target(embedded-posix-shim)
   add_dependencies(embedded-libraries embedded-posix-shim)
+
+  add_custom_target(embedded-single-threaded-shim)
+  add_dependencies(embedded-libraries embedded-single-threaded-shim)
 
   foreach(entry ${EMBEDDED_STDLIB_TARGET_TRIPLES})
     string(REGEX REPLACE "[ \t]+" ";" list "${entry}")
@@ -62,7 +75,7 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
       MODULE_DIR "${CMAKE_BINARY_DIR}/lib/swift/embedded"
       SDK "embedded"
       ARCHITECTURE "${mod}"
-      DEPENDS embedded-stdlib-${mod}
+      DEPENDS embedded-stdlib-${mod} copy_embedded_swift_platform_header
       INSTALL_IN_COMPONENT stdlib
       )
     swift_install_in_component(
@@ -79,5 +92,35 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
     set_property(TARGET embedded-posix-shim-${mod} PROPERTY OSX_ARCHITECTURES "${arch}")
 
     add_dependencies(embedded-posix-shim embedded-posix-shim-${mod})
+
+    add_swift_target_library_single(
+      embedded-single-threaded-shim-${mod}
+      swiftEmbeddedPlatformSingleThreaded
+      STATIC
+      IS_FRAGILE
+
+      EmbeddedPlatformSingleThreaded.c
+
+      C_COMPILE_FLAGS ${extra_c_compile_flags}
+      MODULE_DIR "${CMAKE_BINARY_DIR}/lib/swift/embedded"
+      SDK "embedded"
+      ARCHITECTURE "${mod}"
+      DEPENDS embedded-stdlib-${mod} copy_embedded_swift_platform_header
+      INSTALL_IN_COMPONENT stdlib
+      )
+    swift_install_in_component(
+      TARGETS embedded-single-threaded-shim-${mod}
+      DESTINATION "lib/swift/embedded/${mod}"
+      COMPONENT "stdlib"
+      )
+    swift_install_in_component(
+      FILES "${SWIFTLIB_DIR}/embedded/${mod}/libswiftEmbeddedPlatformSingleThreaded.a"
+      DESTINATION "lib/swift/embedded/${mod}/"
+      COMPONENT "stdlib"
+      PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+      )
+    set_property(TARGET embedded-single-threaded-shim-${mod} PROPERTY OSX_ARCHITECTURES "${arch}")
+
+    add_dependencies(embedded-single-threaded-shim embedded-single-threaded-shim-${mod})
   endforeach()
 endif()
