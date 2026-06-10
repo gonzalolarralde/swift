@@ -338,7 +338,7 @@ if(SWIFT_EMBEDDED_STDLIB_SDKS_FOR_TARGET_TRIPLES)
 endif()
 
 if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
-  get_threading_package(EMBEDDED "defer" SWIFT_SDK_embedded_THREADING_PACKAGE)
+  get_threading_package(EMBEDDED "embedded" SWIFT_SDK_embedded_THREADING_PACKAGE)
 
   set(triples)
   foreach(entry ${EMBEDDED_STDLIB_TARGET_TRIPLES})
