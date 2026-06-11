@@ -1477,13 +1477,10 @@ enum class State : uint8_t { Uninitialized, On, Off };
 
 #if !SWIFT_CONCURRENCY_EMBEDDED
 static std::atomic<State> CurrentState;
-#endif
-
 static LazyMutex ActiveContinuationsLock;
 static Lazy<std::unordered_set<AsyncTask *>> ActiveContinuations;
 
 static bool isEnabled() {
-#if !SWIFT_CONCURRENCY_EMBEDDED
   auto state = CurrentState.load(std::memory_order_relaxed);
   if (state == State::Uninitialized) {
     bool enabled =
@@ -1492,12 +1489,11 @@ static bool isEnabled() {
     CurrentState.store(state, std::memory_order_relaxed);
   }
   return state == State::On;
-#else
-  return false;
-#endif
 }
+#endif
 
 static void init(AsyncTask *task) {
+#if !SWIFT_CONCURRENCY_EMBEDDED
   if (!isEnabled())
     return;
 
@@ -1509,9 +1505,13 @@ static void init(AsyncTask *task) {
         0,
         "Initializing continuation for task %p that was already initialized.\n",
         task);
+#else
+  (void)task;
+#endif
 }
 
 static void willResume(AsyncTask *task) {
+#if !SWIFT_CONCURRENCY_EMBEDDED
   if (!isEnabled())
     return;
 
@@ -1523,6 +1523,9 @@ static void willResume(AsyncTask *task) {
         "Resuming continuation for task %p that is not awaited "
         "(may have already been resumed).\n",
         task);
+#else
+  (void)task;
+#endif
 }
 
 } // namespace continuationChecking

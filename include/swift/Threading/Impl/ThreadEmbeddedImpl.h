@@ -97,32 +97,49 @@ inline void mutex_unsafe_unlock(mutex_handle &handle) {
 
 // .. Lazy mutex support .....................................................
 
-using lazy_mutex_handle = __swift_lazy_mutex_t;
+struct lazy_mutex_handle {
+  mutex_handle mutex = 0;
+  __swift_once_t once = 0;
+};
 
-#define SWIFT_LAZY_MUTEX_INITIALIZER 0
+#define SWIFT_LAZY_MUTEX_INITIALIZER threading_impl::lazy_mutex_handle{}
+
+inline void lazy_mutex_init(lazy_mutex_handle &handle) {
+  _swift_once(
+      &handle.once,
+      [](void *ctx) {
+        auto *handle = static_cast<lazy_mutex_handle *>(ctx);
+        mutex_init(handle->mutex);
+      },
+      &handle);
+}
 
 inline void lazy_mutex_destroy(lazy_mutex_handle &handle) {
-  _swift_lazy_mutex_destroy(&handle);
+  lazy_mutex_init(handle);
+  mutex_destroy(handle.mutex);
 }
 
 inline void lazy_mutex_lock(lazy_mutex_handle &handle) {
-  _swift_lazy_mutex_lock(&handle);
+  lazy_mutex_init(handle);
+  mutex_lock(handle.mutex);
 }
 
 inline void lazy_mutex_unlock(lazy_mutex_handle &handle) {
-  _swift_lazy_mutex_unlock(&handle);
+  mutex_unlock(handle.mutex);
 }
 
 inline bool lazy_mutex_try_lock(lazy_mutex_handle &handle) {
-  return _swift_lazy_mutex_tryLock(&handle) != 0;
+  lazy_mutex_init(handle);
+  return mutex_try_lock(handle.mutex);
 }
 
 inline void lazy_mutex_unsafe_lock(lazy_mutex_handle &handle) {
-  _swift_lazy_mutex_unsafeLock(&handle);
+  lazy_mutex_init(handle);
+  mutex_unsafe_lock(handle.mutex);
 }
 
 inline void lazy_mutex_unsafe_unlock(lazy_mutex_handle &handle) {
-  _swift_lazy_mutex_unsafeUnlock(&handle);
+  mutex_unsafe_unlock(handle.mutex);
 }
 
 // .. Recursive mutex support ................................................
@@ -184,7 +201,7 @@ inline bool cond_wait(cond_handle &handle,
   auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
   auto count = ns.count();
   return _swift_condition_waitFor(
-             &handle, count < 0 ? 0 : static_cast<__swift_uint64_t>(count)) !=
+             &handle, count < 0 ? 0 : static_cast<uint64_t>(count)) !=
          0;
 }
 
@@ -193,7 +210,7 @@ inline bool cond_wait(cond_handle &handle,
   auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
       deadline.time_since_epoch());
   return _swift_condition_waitUntil(
-             &handle, static_cast<__swift_int64_t>(ns.count())) != 0;
+             &handle, static_cast<int64_t>(ns.count())) != 0;
 }
 
 // .. Once ...................................................................

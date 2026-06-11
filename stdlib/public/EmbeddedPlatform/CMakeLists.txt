@@ -92,6 +92,7 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
       PARTIAL_SOURCES_INTENDED
 
       EmbeddedPlatformSingleThreaded.c
+      EmbeddedPlatformSingleThreadedExclusivity.c
 
       C_COMPILE_FLAGS ${extra_c_compile_flags}
       MODULE_DIR "${CMAKE_BINARY_DIR}/lib/swift/embedded"

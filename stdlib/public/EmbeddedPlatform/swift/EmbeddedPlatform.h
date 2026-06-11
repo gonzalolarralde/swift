@@ -33,34 +33,14 @@ typedef __SIZE_TYPE__ __swift_size_t;
 typedef size_t __swift_size_t;
 #endif
 
-#ifdef __UINTPTR_TYPE__
-typedef __UINTPTR_TYPE__ __swift_uintptr_t;
-#else
 #include <stdint.h>
-typedef uintptr_t __swift_uintptr_t;
-#endif
 
-#ifdef __UINT64_TYPE__
-typedef __UINT64_TYPE__ __swift_uint64_t;
-#else
-#include <stdint.h>
-typedef uint64_t __swift_uint64_t;
-#endif
-
-#ifdef __INT64_TYPE__
-typedef __INT64_TYPE__ __swift_int64_t;
-#else
-#include <stdint.h>
-typedef int64_t __swift_int64_t;
-#endif
-
-typedef __swift_uintptr_t __swift_mutex_t;
-typedef __swift_uintptr_t __swift_lazy_mutex_t;
-typedef __swift_uintptr_t __swift_recursive_mutex_t;
-typedef __swift_uintptr_t __swift_condition_t;
-typedef __swift_uintptr_t __swift_once_t;
-typedef __swift_uintptr_t __swift_tls_key_t;
-typedef __swift_uintptr_t __swift_thread_id_t;
+typedef uintptr_t __swift_mutex_t;
+typedef uintptr_t __swift_recursive_mutex_t;
+typedef uintptr_t __swift_condition_t;
+typedef uintptr_t __swift_once_t;
+typedef uintptr_t __swift_tls_key_t;
+typedef uintptr_t __swift_thread_id_t;
 
 /**
  * Number of reserved TLS keys used by Embedded Swift runtime components.
@@ -302,70 +282,26 @@ void _swift_mutex_unsafeLock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
 void _swift_mutex_unsafeUnlock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
 
 /**
- * [OPTIONAL] Destroys a lazily initialized mutex. Defaults may no-op when lazy
- * mutexes do not allocate resources.
- */
-void _swift_lazy_mutex_destroy(
-    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
-
-/**
- * [OPTIONAL] Acquires a lazily initialized mutex. Defaults may use the base
- * mutex behavior.
- */
-void _swift_lazy_mutex_lock(
-    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
-
-/**
- * [OPTIONAL] Releases a lazily initialized mutex. Defaults may use the base
- * mutex behavior.
- */
-void _swift_lazy_mutex_unlock(
-    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
-
-/**
- * [OPTIONAL] Attempts to acquire a lazily initialized mutex without blocking.
- * Defaults may use the base mutex behavior.
- */
-int _swift_lazy_mutex_tryLock(
-    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
-
-/**
- * [OPTIONAL] Acquires a lazy mutex from error paths. Defaults may call
- * `_swift_lazy_mutex_lock`.
- */
-void _swift_lazy_mutex_unsafeLock(
-    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
-
-/**
- * [OPTIONAL] Releases a lazy mutex from error paths. Defaults may call
- * `_swift_lazy_mutex_unlock`.
- */
-void _swift_lazy_mutex_unsafeUnlock(
-    __swift_lazy_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
-
-/**
- * [OPTIONAL] Initializes a recursive mutex. Defaults may map this to the base
- * mutex behavior for single-threaded configurations.
+ * Initializes a recursive mutex.
  */
 void _swift_recursive_mutex_init(
     __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex,
     int checked);
 
 /**
- * [OPTIONAL] Destroys a recursive mutex initialized by
- * `_swift_recursive_mutex_init`.
+ * Destroys a recursive mutex initialized by `_swift_recursive_mutex_init`.
  */
 void _swift_recursive_mutex_destroy(
     __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
 
 /**
- * [OPTIONAL] Acquires a recursive mutex.
+ * Acquires a recursive mutex.
  */
 void _swift_recursive_mutex_lock(
     __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
 
 /**
- * [OPTIONAL] Releases a recursive mutex.
+ * Releases a recursive mutex.
  */
 void _swift_recursive_mutex_unlock(
     __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
@@ -419,7 +355,7 @@ void _swift_condition_wait(
  */
 int _swift_condition_waitFor(
     __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition,
-    __swift_uint64_t nanoseconds);
+    uint64_t nanoseconds);
 
 /**
  * Releases the associated lock and waits until signaled or until the deadline,
@@ -428,7 +364,7 @@ int _swift_condition_waitFor(
  */
 int _swift_condition_waitUntil(
     __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition,
-    __swift_int64_t epochNanoseconds);
+    int64_t epochNanoseconds);
 
 /**
  * Runs `function(context)` exactly once for a statically allocated predicate.
