@@ -1,4 +1,4 @@
-// RUN: %llvm-nm -a %swift_obj_root/lib/swift/embedded/%target-triple/libswift_Concurrency.a | %FileCheck %s
+// RUN: %llvm-nm -a %target-embedded-library-dir/libswift_Concurrency.a | %FileCheck %s
 
 // REQUIRES: swift_in_compiler
 // REQUIRES: swift_feature_Embedded
