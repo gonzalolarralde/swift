@@ -11,7 +11,7 @@
 
 // Run without optimization.
 // RUN: %target-clang %t/a.o -o %t/noopt.out %target-embedded-library-path %target-clang-resource-dir-opt -lswift_Concurrency %target-swift-default-executor-opt -dead_strip -lswiftExclusivitySingleThreaded %target-embedded-single-threaded-shim
-// RUN: %target-run %t/noopt.out 2>&1 | %FileCheck %s
+// RUN: %target-run not --crash %t/noopt.out
 
 // Build with optimization.
 // RUN: %target-swift-frontend -enable-experimental-feature Embedded -parse-as-library %s -emit-ir -o %t/noopt.ll -enforce-exclusivity=checked -enable-experimental-feature EmbeddedDynamicExclusivity -O
@@ -23,7 +23,7 @@
 
 // Run with optimization.
 // RUN: %target-clang %t/a.o -o %t/opt.out %target-embedded-library-path %target-clang-resource-dir-opt -lswift_Concurrency %target-swift-default-executor-opt -dead_strip -lswiftExclusivitySingleThreaded %target-embedded-single-threaded-shim
-// RUN: %target-run %t/opt.out
+// RUN: %target-run not --crash %t/opt.out
 
 // REQUIRES: executable_test
 // REQUIRES: swift_in_compiler

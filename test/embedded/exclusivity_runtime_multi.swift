@@ -3,14 +3,13 @@
 
 // Multi-threaded exclusivity checking implementation (that uses C11 thread_local).
 // RUN: %target-clang %t/a.o -o %t/a.out %target-embedded-library-path %target-clang-resource-dir-opt -lswift_Concurrency %target-swift-default-executor-opt -dead_strip -lswiftExclusivityC11ThreadLocal %target-embedded-single-threaded-shim
-// RUN: not %target-run %t/a.out
+// RUN: %target-run not --crash %t/a.out
 
 // REQUIRES: executable_test
 // REQUIRES: swift_in_compiler
 // REQUIRES: optimized_stdlib
 // REQUIRES: swift_feature_Embedded
 // REQUIRES: swift_feature_EmbeddedDynamicExclusivity
-// REQUIRES: OS=macosx
 
 // UNSUPPORTED: OS=wasip1
 
