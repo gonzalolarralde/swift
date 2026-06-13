@@ -33,13 +33,32 @@ typedef __SIZE_TYPE__ __swift_size_t;
 typedef size_t __swift_size_t;
 #endif
 
-#if __has_feature(nullability)
+#include <stdint.h>
+
+typedef uintptr_t __swift_mutex_t;
+typedef uintptr_t __swift_recursive_mutex_t;
+typedef uintptr_t __swift_condition_t;
+typedef uintptr_t __swift_once_t;
+typedef uintptr_t __swift_tls_key_t;
+typedef uintptr_t __swift_thread_id_t;
+
+/**
+ * Number of reserved TLS keys used by Embedded Swift runtime components.
+ *
+ * The numeric values are kept in sync with the reserved keys in
+ * swift/Threading/TLSKeys.h.
+ */
+#define __SWIFT_TLS_KEY_COUNT 8
+
+#if defined(__has_feature) && __has_feature(nullability)
 #define EMBEDDED_SWIFT_NONNULL _Nonnull
 #define EMBEDDED_SWIFT_NULLABLE _Nullable
 #else
 #define EMBEDDED_SWIFT_NONNULL
 #define EMBEDDED_SWIFT_NULLABLE
 #endif
+
+typedef void (*__swift_tls_dtor_t)(void * EMBEDDED_SWIFT_NULLABLE);
 
 #if defined(__has_feature) && (__has_feature(bounds_attributes) || __has_feature(bounds_safety_attributes))
 #define EMBEDDED_SWIFT_COUNTED_BY(N) __attribute__((__counted_by__(N)))
@@ -49,6 +68,10 @@ typedef size_t __swift_size_t;
 #define EMBEDDED_SWIFT_COUNTED_BY(N)
 #define EMBEDDED_SWIFT_SIZED_BY(N)
 #define EMBEDDED_SWIFT_SINGLE
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 /**
@@ -203,10 +226,208 @@ void * EMBEDDED_SWIFT_NULLABLE _swift_getExclusivityTLS(void);
  *     `_swift_getExclusivityTLS` on the same thread (without an intervening
  *     call to `_swift_setExclusivityTLS`) shall return `ptr`.
  *
- * See `_swift_getExclusivityTLS` for more information about dynamic exclusivity
- * checking.
+ * See `_swift_getExclusivityTLS` for more information about dynamic
+ * exclusivity checking.
  */
 void _swift_setExclusivityTLS(void * EMBEDDED_SWIFT_NULLABLE ptr);
+
+/**
+ * Initializes a non-recursive mutex.
+ *
+ * Parameters:
+ *   - `mutex`: platform-owned mutex storage. The value is initialized by this
+ *     function and later passed to the other `_swift_mutex_*` functions.
+ *   - `checked`: nonzero if the platform should diagnose mutex misuse when it
+ *     can do so cheaply.
+ *
+ * This function is required when using Embedded Swift facilities that can be
+ * accessed concurrently, including multicore Concurrency and Synchronization.
+ */
+void _swift_mutex_init(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex,
+                       int checked);
+
+/**
+ * Destroys a mutex initialized by `_swift_mutex_init`.
+ */
+void _swift_mutex_destroy(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Acquires a non-recursive mutex, blocking or spinning until ownership is
+ * obtained.
+ */
+void _swift_mutex_lock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Releases a non-recursive mutex held by the current execution context.
+ */
+void _swift_mutex_unlock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Attempts to acquire a non-recursive mutex without blocking.
+ *
+ * Returns nonzero if the mutex was acquired, or zero if it was not acquired.
+ */
+int _swift_mutex_tryLock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Acquires a mutex from error paths. Defaults may call
+ * `_swift_mutex_lock`.
+ */
+void _swift_mutex_unsafeLock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * [OPTIONAL] Releases a mutex from error paths. Defaults may call
+ * `_swift_mutex_unlock`.
+ */
+void _swift_mutex_unsafeUnlock(__swift_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Initializes a recursive mutex.
+ */
+void _swift_recursive_mutex_init(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex,
+    int checked);
+
+/**
+ * Destroys a recursive mutex initialized by `_swift_recursive_mutex_init`.
+ */
+void _swift_recursive_mutex_destroy(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Acquires a recursive mutex.
+ */
+void _swift_recursive_mutex_lock(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Releases a recursive mutex.
+ */
+void _swift_recursive_mutex_unlock(
+    __swift_recursive_mutex_t * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Initializes a condition variable with an associated lock.
+ */
+void _swift_condition_init(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
+
+/**
+ * Destroys a condition variable initialized by `_swift_condition_init`.
+ */
+void _swift_condition_destroy(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
+
+/**
+ * Acquires the lock associated with a condition variable.
+ */
+void _swift_condition_lock(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
+
+/**
+ * Releases the lock associated with a condition variable.
+ */
+void _swift_condition_unlock(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
+
+/**
+ * Wakes one execution context waiting on a condition variable.
+ */
+void _swift_condition_signal(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
+
+/**
+ * Wakes every execution context waiting on a condition variable.
+ */
+void _swift_condition_broadcast(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
+
+/**
+ * Releases the associated lock and waits until signaled. The associated lock
+ * must be held on entry and must be held again before this function returns.
+ */
+void _swift_condition_wait(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
+
+/**
+ * Releases the associated lock and waits until signaled or until `nanoseconds`
+ * elapsed. Returns nonzero if the wait ended before the timeout elapsed.
+ */
+int _swift_condition_waitFor(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition,
+    uint64_t nanoseconds);
+
+/**
+ * Releases the associated lock and waits until signaled or until the deadline,
+ * expressed as nanoseconds since the platform's system-clock epoch. Returns
+ * nonzero if the wait ended before the deadline elapsed.
+ */
+int _swift_condition_waitUntil(
+    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition,
+    int64_t epochNanoseconds);
+
+/**
+ * Runs `function(context)` exactly once for a statically allocated predicate.
+ *
+ * This hook is used by the embedded threading implementation. It is distinct
+ * from the compiler/runtime `swift_once` entry point.
+ */
+void _swift_once(__swift_once_t * EMBEDDED_SWIFT_NONNULL predicate,
+                 void (* EMBEDDED_SWIFT_NONNULL function)(
+                     void * EMBEDDED_SWIFT_NULLABLE),
+                 void * EMBEDDED_SWIFT_NULLABLE context);
+
+/**
+ * Initializes a reserved TLS key. `key` is one of the numeric reserved keys
+ * described by `__SWIFT_TLS_KEY_COUNT`. `destructor` may be NULL.
+ *
+ * Returns nonzero if the platform supports the requested key.
+ */
+int _swift_tls_init(__swift_tls_key_t key,
+                    __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
+
+/**
+ * Allocates a dynamic TLS key and writes it into `key`.
+ *
+ * Returns nonzero if the key was allocated, or zero on failure.
+ */
+int _swift_tls_alloc(
+    __swift_tls_key_t * EMBEDDED_SWIFT_NONNULL key,
+    __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
+
+/**
+ * Returns the value stored for a reserved TLS key in the current execution
+ * context, or NULL if no value has been stored.
+ */
+void * EMBEDDED_SWIFT_NULLABLE _swift_tls_get(__swift_tls_key_t key);
+
+/**
+ * Stores a value for a reserved TLS key in the current execution context.
+ */
+void _swift_tls_set(__swift_tls_key_t key,
+                    void * EMBEDDED_SWIFT_NULLABLE value);
+
+/**
+ * Returns an identifier for the current execution context. Identifiers only need
+ * to compare equal for the same context during its lifetime.
+ */
+__swift_thread_id_t _swift_thread_getCurrentId(void);
+
+/**
+ * Returns nonzero when the current execution context is the platform's main
+ * execution context.
+ */
+int _swift_thread_isMain(void);
+
+/**
+ * Writes the current execution context's stack bounds into `low` and `high`.
+ *
+ * [OPTIONAL] Returns nonzero if bounds were written, or zero if stack bounds are
+ * not available on this platform.
+ */
+int _swift_thread_getCurrentStackBounds(
+    void * EMBEDDED_SWIFT_NULLABLE * EMBEDDED_SWIFT_NONNULL low,
+    void * EMBEDDED_SWIFT_NULLABLE * EMBEDDED_SWIFT_NONNULL high);
 
 /**
  * Exit the program.
@@ -220,6 +441,10 @@ void _swift_setExclusivityTLS(void * EMBEDDED_SWIFT_NULLABLE ptr);
  * function.
  */
 void _swift_exit(int code);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #undef EMBEDDED_SWIFT_SINGLE
 #undef EMBEDDED_SWIFT_SIZED_BY

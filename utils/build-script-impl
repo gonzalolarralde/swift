@@ -235,7 +235,7 @@ KNOWN_SETTINGS=(
     swift-stdlib-has-filesystem                   "1"               "whether to build stdlib assuming the runtime environment provides a filesystem"
     swift-stdlib-supports-backtrace-reporting     ""                "whether to build stdlib assuming the runtime environment provides the backtrace(3) API, if not set defaults to true on all platforms except for Cygwin, Haiku and wasm"
     swift-runtime-static-image-inspection         "0"               "whether to build stdlib assuming the runtime environment only supports a single runtime image with Swift code"
-    swift-threading-package                       ""                "override the threading package for the host build; this is either a single package or a semicolon-separated list of sdk:package pairs.  Valid packages are empty string (no override), 'pthreads', 'darwin', 'linux', 'win32', 'c11', 'none'"
+    swift-threading-package                       ""                "override the threading package for the host build; this is either a single package or a semicolon-separated list of sdk:package pairs.  Valid packages are empty string (no override), 'pthreads', 'darwin', 'linux', 'win32', 'c11', 'none', or 'embedded'"
     swift-stdlib-single-threaded-concurrency      "0"               "build Swift concurrency in single-threaded mode"
     swift-stdlib-task-to-thread-model-concurrency "0"               "build Swift concurrency with task-to-thread mode"
     swift-stdlib-tracing                          ""                "whether to enable tracing signposts for the stdlib; default is 1 on Darwin platforms, 0 otherwise"
@@ -2045,9 +2045,9 @@ for host in "${ALL_HOSTS[@]}"; do
                     fi
 
                     case $package in
-                        "" | pthreads | darwin | linux | win32 | c11 | none) ;;
+                        "" | pthreads | darwin | linux | win32 | c11 | none | embedded) ;;
                         *)
-                        echo "build-script: unknown threading package $package for sdk $sdk; must be one of 'pthreads', 'darwin', 'linux', 'win32', 'c11', 'none', or empty for sdk default"
+                        echo "build-script: unknown threading package $package for sdk $sdk; must be one of 'pthreads', 'darwin', 'linux', 'win32', 'c11', 'none', 'embedded', or empty for sdk default"
                         exit 1
                         ;;
                     esac
