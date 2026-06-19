@@ -29,7 +29,7 @@
 
 #define SWIFT_THREADING_USE_RESERVED_TLS_KEYS 1
 #define SWIFT_THREADING_HAS_LAZY_MUTEX 0
-#define SWIFT_THREADING_HAS_TIMED_CONDITION_WAIT 0
+#define SWIFT_THREADING_HAS_CONDITION_VARIABLE 0
 
 static_assert(__SWIFT_TLS_KEY_COUNT ==
                   static_cast<unsigned>(swift::tls_key::exclusivity) + 1,
@@ -112,36 +112,6 @@ inline void recursive_mutex_lock(recursive_mutex_handle &handle) {
 
 inline void recursive_mutex_unlock(recursive_mutex_handle &handle) {
   _swift_mutex_unlock(&handle);
-}
-
-using cond_handle = __swift_condition_t;
-
-inline void cond_init(cond_handle &handle) {
-  _swift_condition_init(&handle);
-}
-
-inline void cond_destroy(cond_handle &handle) {
-  _swift_condition_destroy(&handle);
-}
-
-inline void cond_lock(cond_handle &handle) {
-  _swift_condition_lock(&handle);
-}
-
-inline void cond_unlock(cond_handle &handle) {
-  _swift_condition_unlock(&handle);
-}
-
-inline void cond_signal(cond_handle &handle) {
-  _swift_condition_signal(&handle);
-}
-
-inline void cond_broadcast(cond_handle &handle) {
-  _swift_condition_broadcast(&handle);
-}
-
-inline void cond_wait(cond_handle &handle) {
-  _swift_condition_wait(&handle);
 }
 
 using once_t = __swift_once_t;
