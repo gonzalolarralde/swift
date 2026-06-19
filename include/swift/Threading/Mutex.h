@@ -24,10 +24,6 @@
 
 #include "Impl.h"
 
-#ifndef SWIFT_THREADING_HAS_LAZY_MUTEX
-#define SWIFT_THREADING_HAS_LAZY_MUTEX 1
-#endif
-
 namespace swift {
 
 /// A Mutex object that supports `BasicLockable` and `Lockable` C++ concepts.

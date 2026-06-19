@@ -84,29 +84,6 @@ public func _swift_mutex_tryLock(_ mutex: UnsafeMutableRawPointer) -> Int {
 }
 
 @implementation @c
-public func _swift_condition_init(_ condition: UnsafeMutablePointer<Int>) {
-  condition.pointee = 0
-}
-
-@implementation @c
-public func _swift_condition_destroy(_ condition: UnsafeMutablePointer<Int>) {}
-
-@implementation @c
-public func _swift_condition_lock(_ condition: UnsafeMutablePointer<Int>) {}
-
-@implementation @c
-public func _swift_condition_unlock(_ condition: UnsafeMutablePointer<Int>) {}
-
-@implementation @c
-public func _swift_condition_signal(_ condition: UnsafeMutablePointer<Int>) {}
-
-@implementation @c
-public func _swift_condition_broadcast(_ condition: UnsafeMutablePointer<Int>) {}
-
-@implementation @c
-public func _swift_condition_wait(_ condition: UnsafeMutablePointer<Int>) {}
-
-@implementation @c
 public func _swift_once(
   _ predicate: UnsafeMutablePointer<Int>,
   _ function: @convention(c) (UnsafeMutableRawPointer?) -> Void,

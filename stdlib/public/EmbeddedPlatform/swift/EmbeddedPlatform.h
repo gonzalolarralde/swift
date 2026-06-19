@@ -47,7 +47,6 @@ typedef unsigned long long __swift_typeid_t;
  */
 typedef unsigned long long __swift_options_t;
 
-typedef __swift_ptrdiff_t __swift_condition_t;
 typedef __swift_ptrdiff_t __swift_once_t;
 typedef __swift_ptrdiff_t __swift_tls_key_t;
 typedef __swift_ptrdiff_t __swift_thread_id_t;
@@ -368,49 +367,6 @@ void _swift_mutex_unlock(void * EMBEDDED_SWIFT_NONNULL mutex);
  * Returns nonzero if the mutex was acquired, or zero if it was not acquired.
  */
 __swift_ptrdiff_t _swift_mutex_tryLock(void * EMBEDDED_SWIFT_NONNULL mutex);
-
-/**
- * Initializes a condition variable with an associated lock.
- */
-void _swift_condition_init(
-    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
-
-/**
- * Destroys a condition variable initialized by `_swift_condition_init`.
- */
-void _swift_condition_destroy(
-    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
-
-/**
- * Acquires the lock associated with a condition variable.
- */
-void _swift_condition_lock(
-    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
-
-/**
- * Releases the lock associated with a condition variable.
- */
-void _swift_condition_unlock(
-    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
-
-/**
- * Wakes one execution context waiting on a condition variable.
- */
-void _swift_condition_signal(
-    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
-
-/**
- * Wakes every execution context waiting on a condition variable.
- */
-void _swift_condition_broadcast(
-    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
-
-/**
- * Releases the associated lock and waits until signaled. The associated lock
- * must be held on entry and must be held again before this function returns.
- */
-void _swift_condition_wait(
-    __swift_condition_t * EMBEDDED_SWIFT_NONNULL condition);
 
 /**
  * Runs `function(context)` exactly once for a statically allocated predicate.

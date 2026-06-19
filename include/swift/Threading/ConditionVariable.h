@@ -21,11 +21,9 @@
 
 #include "Impl.h"
 
-#ifndef SWIFT_THREADING_HAS_TIMED_CONDITION_WAIT
-#define SWIFT_THREADING_HAS_TIMED_CONDITION_WAIT 1
-#endif
-
 namespace swift {
+
+#if SWIFT_THREADING_HAS_CONDITION_VARIABLE
 
 // A condition variable.
 //
@@ -91,19 +89,16 @@ public:
   /// After this method returns, the associated mutex will be locked.
   ///
   /// Precondition: ConditionVariable locked by this thread.
-#if SWIFT_THREADING_HAS_TIMED_CONDITION_WAIT
   template <class Rep, class Period>
   bool wait(std::chrono::duration<Rep, Period> duration) {
     return threading_impl::cond_wait(Handle, duration);
   }
-#endif
 
   /// Unlock and block on this condition variable, with a deadline.
   ///
   /// After this method returns, the associated mutex will be locked.
   ///
   /// Precondition: ConditionVariable locked by this thread.
-#if SWIFT_THREADING_HAS_TIMED_CONDITION_WAIT
   template <class Rep, class Period>
   bool waitUntil(std::chrono::time_point<std::chrono::system_clock,
                  std::chrono::duration<Rep, Period>> deadline) {
@@ -111,7 +106,6 @@ public:
       std::chrono::system_clock::duration>(deadline);
     return threading_impl::cond_wait(Handle, sysdeadline);
   }
-#endif
 
   /// Acquires lock before calling the supplied critical section and releases
   /// lock on return from critical section.
@@ -147,6 +141,8 @@ public:
 private:
   threading_impl::cond_handle Handle;
 };
+
+#endif // SWIFT_THREADING_HAS_CONDITION_VARIABLE
 
 }
 
