@@ -21,10 +21,10 @@ func mutexWord(
 @_cdecl("_swift_mutex_init")
 public func test_swift_mutex_init(
   _ mutex: UnsafeMutableRawPointer,
-  _ checked: Int
+  _ flags: CUnsignedLongLong
 ) {
   print("mutex.init")
-  if checked != 0 {
+  if flags != 0 {
     print("unexpected checked mutex")
   }
   mutexWord(mutex).pointee = 0x51

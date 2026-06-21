@@ -47,6 +47,18 @@ typedef unsigned long long __swift_typeid_t;
  */
 typedef unsigned long long __swift_options_t;
 
+typedef __swift_ptrdiff_t __swift_once_t;
+typedef __swift_ptrdiff_t __swift_tls_key_t;
+typedef __swift_ptrdiff_t __swift_thread_id_t;
+
+/**
+ * Number of reserved TLS keys used by Embedded Swift runtime components.
+ *
+ * The numeric values are kept in sync with the reserved keys in
+ * swift/Threading/TLSKeys.h.
+ */
+#define __SWIFT_TLS_KEY_COUNT 8
+
 #if __has_feature(nullability)
 #define EMBEDDED_SWIFT_NONNULL _Nonnull
 #define EMBEDDED_SWIFT_NULLABLE _Nullable
@@ -54,6 +66,8 @@ typedef unsigned long long __swift_options_t;
 #define EMBEDDED_SWIFT_NONNULL
 #define EMBEDDED_SWIFT_NULLABLE
 #endif
+
+typedef void (*__swift_tls_dtor_t)(void * EMBEDDED_SWIFT_NULLABLE);
 
 #if defined(__has_feature) && (__has_feature(bounds_attributes) || __has_feature(bounds_safety_attributes))
 #define EMBEDDED_SWIFT_COUNTED_BY(N) __attribute__((__counted_by__(N)))
@@ -136,6 +150,26 @@ typedef enum EMBEDDED_SWIFT_OPTION_SET: __swift_options_t {
    */
   SWIFT_FREE_NONE EMBEDDED_SWIFT_NAME(none) = 0,
 } swift_free_flags_t EMBEDDED_SWIFT_NAME(SwiftFreeFlags);
+
+/**
+ * Options provided to the Swift mutex initialization function.
+ */
+typedef enum EMBEDDED_SWIFT_OPTION_SET: __swift_options_t {
+  /**
+   * No options.
+   */
+  SWIFT_MUTEX_NONE EMBEDDED_SWIFT_NAME(none) = 0,
+
+  /**
+   * Diagnose mutex misuse when the platform can do so cheaply.
+   */
+  SWIFT_MUTEX_CHECKED EMBEDDED_SWIFT_NAME(checked) = 0x01,
+
+  /**
+   * Allow the same execution context to acquire the mutex recursively.
+   */
+  SWIFT_MUTEX_RECURSIVE EMBEDDED_SWIFT_NAME(recursive) = 0x02
+} swift_mutex_flags_t EMBEDDED_SWIFT_NAME(SwiftMutexFlags);
 
 /**
  * Allocates memory and returns the resulting pointer.
@@ -304,13 +338,12 @@ void _swift_setExclusivityTLS(void * EMBEDDED_SWIFT_NULLABLE ptr);
  *     and later passed to the other `_swift_mutex_*` functions. The contents
  *     are private to the platform implementation. The storage is at least six
  *     pointer-sized words and has pointer alignment.
- *   - `checked`: nonzero if the platform should diagnose mutex misuse when it
- *     can do so cheaply.
+ *   - `flags`: flags controlling mutex behavior.
  *
  * This function is required when using Synchronization.Mutex.
  */
 void _swift_mutex_init(void * EMBEDDED_SWIFT_NONNULL mutex,
-                       __swift_ptrdiff_t checked);
+                       swift_mutex_flags_t flags);
 
 /**
  * Destroys a mutex initialized by `_swift_mutex_init`.
@@ -334,6 +367,70 @@ void _swift_mutex_unlock(void * EMBEDDED_SWIFT_NONNULL mutex);
  * Returns nonzero if the mutex was acquired, or zero if it was not acquired.
  */
 __swift_ptrdiff_t _swift_mutex_tryLock(void * EMBEDDED_SWIFT_NONNULL mutex);
+
+/**
+ * Runs `function(context)` exactly once for a statically allocated predicate.
+ *
+ * This hook is used by the embedded threading implementation. It is distinct
+ * from the compiler/runtime `swift_once` entry point.
+ */
+void _swift_once(__swift_once_t * EMBEDDED_SWIFT_NONNULL predicate,
+                 void (* EMBEDDED_SWIFT_NONNULL function)(
+                     void * EMBEDDED_SWIFT_NULLABLE),
+                 void * EMBEDDED_SWIFT_NULLABLE context);
+
+/**
+ * Initializes a reserved TLS key. `key` is one of the numeric reserved keys
+ * described by `__SWIFT_TLS_KEY_COUNT`. `destructor` may be NULL.
+ *
+ * Returns nonzero if the platform supports the requested key.
+ */
+__swift_ptrdiff_t _swift_tls_init(
+    __swift_tls_key_t key,
+    __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
+
+/**
+ * Allocates a dynamic TLS key and writes it into `key`.
+ *
+ * Returns nonzero if the key was allocated, or zero on failure.
+ */
+__swift_ptrdiff_t _swift_tls_alloc(
+    __swift_tls_key_t * EMBEDDED_SWIFT_NONNULL key,
+    __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
+
+/**
+ * Returns the value stored for a TLS key in the current execution context, or
+ * NULL if no value has been stored.
+ */
+void * EMBEDDED_SWIFT_NULLABLE _swift_tls_get(__swift_tls_key_t key);
+
+/**
+ * Stores a value for a TLS key in the current execution context.
+ */
+void _swift_tls_set(__swift_tls_key_t key,
+                    void * EMBEDDED_SWIFT_NULLABLE value);
+
+/**
+ * Returns an identifier for the current execution context. Identifiers only
+ * need to compare equal for the same context during its lifetime.
+ */
+__swift_thread_id_t _swift_thread_getCurrentId(void);
+
+/**
+ * Returns nonzero when the current execution context is the platform's main
+ * execution context.
+ */
+__swift_ptrdiff_t _swift_thread_isMain(void);
+
+/**
+ * Writes the current execution context's stack bounds into `low` and `high`.
+ *
+ * Optional: returns nonzero if bounds were written, or zero if stack bounds are
+ * not available on this platform.
+ */
+__swift_ptrdiff_t _swift_thread_getCurrentStackBounds(
+    void * EMBEDDED_SWIFT_NULLABLE * EMBEDDED_SWIFT_NONNULL low,
+    void * EMBEDDED_SWIFT_NULLABLE * EMBEDDED_SWIFT_NONNULL high);
 
 /**
  * Exit the program.
