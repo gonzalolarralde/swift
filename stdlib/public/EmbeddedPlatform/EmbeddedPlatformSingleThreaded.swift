@@ -97,16 +97,19 @@ public func _swift_once(
   function(context)
 }
 
-let _swift_embedded_platform_tls_key_count = 24
-var _swift_embedded_platform_next_dynamic_tls_key = 8
-var _swift_embedded_platform_tls_values = InlineArray<24, UnsafeMutableRawPointer?>(repeating: nil)
+fileprivate struct SingleThreadedTLS {
+  static let reservedKeyCount = 8
+  static let keyCount = 24
+  static var nextDynamicKey = reservedKeyCount
+  static var values = [24 of UnsafeMutableRawPointer?](repeating: nil)
+}
 
 @implementation @c
 public func _swift_tls_init(
   _ key: Int,
   _ destructor: (@convention(c) (UnsafeMutableRawPointer?) -> Void)?
 ) -> Int {
-  key < _swift_embedded_platform_tls_key_count ? 1 : 0
+  key < SingleThreadedTLS.keyCount ? 1 : 0
 }
 
 @implementation @c
@@ -114,29 +117,29 @@ public func _swift_tls_alloc(
   _ key: UnsafeMutablePointer<Int>,
   _ destructor: (@convention(c) (UnsafeMutableRawPointer?) -> Void)?
 ) -> Int {
-  if _swift_embedded_platform_next_dynamic_tls_key >= _swift_embedded_platform_tls_key_count {
+  if SingleThreadedTLS.nextDynamicKey >= SingleThreadedTLS.keyCount {
     return 0
   }
 
-  key.pointee = _swift_embedded_platform_next_dynamic_tls_key
-  _swift_embedded_platform_next_dynamic_tls_key += 1
+  key.pointee = SingleThreadedTLS.nextDynamicKey
+  SingleThreadedTLS.nextDynamicKey += 1
   return 1
 }
 
 @implementation @c
 public func _swift_tls_get(_ key: Int) -> UnsafeMutableRawPointer? {
-  if key >= _swift_embedded_platform_tls_key_count {
+  if key >= SingleThreadedTLS.keyCount {
     return nil
   }
-  return _swift_embedded_platform_tls_values[key]
+  return SingleThreadedTLS.values[key]
 }
 
 @implementation @c
 public func _swift_tls_set(_ key: Int, _ value: UnsafeMutableRawPointer?) {
-  if key >= _swift_embedded_platform_tls_key_count {
+  if key >= SingleThreadedTLS.keyCount {
     return
   }
-  _swift_embedded_platform_tls_values[key] = value
+  SingleThreadedTLS.values[key] = value
 }
 
 @implementation @c
