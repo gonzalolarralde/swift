@@ -322,6 +322,10 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB AND SWIFT_SHOULD_BUILD_EMBEDDED_CONCURRENC
 
     set(extra_c_compile_flags)
     set(extra_swift_compile_flags)
+    if(SWIFT_USE_SWIFT_EMBEDDED_PLATFORM)
+      list(APPEND extra_c_compile_flags -DSWIFT_USE_EMBEDDED_SWIFT_PLATFORM=1)
+      list(APPEND extra_swift_compile_flags -D SWIFT_USE_EMBEDDED_SWIFT_PLATFORM)
+    endif()
 
     # Skip Concurrency for freestanding Wasm (no libc/libc++ available).
     if("${triple}" MATCHES "-none-wasm$")
@@ -369,7 +373,7 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB AND SWIFT_SHOULD_BUILD_EMBEDDED_CONCURRENC
       )
     endif()
 
-    set(SWIFT_SDK_embedded_THREADING_PACKAGE none)
+    set(SWIFT_SDK_embedded_THREADING_PACKAGE embedded)
     set(SWIFT_SDK_embedded_ARCH_${arch}_MODULE "${mod}")
     set(SWIFT_SDK_embedded_ARCH_${mod}_MODULE "${mod}")
     set(SWIFT_SDK_embedded_LIB_SUBDIR "embedded")
@@ -407,7 +411,7 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB AND SWIFT_SHOULD_BUILD_EMBEDDED_CONCURRENC
       SDK "embedded"
       ARCHITECTURE "${arch}"
       ARCHITECTURE_SUBDIR_NAME "${mod}"
-      DEPENDS embedded-stdlib-${mod}
+      DEPENDS embedded-stdlib-${mod} copy_embedded_swift_platform_header
       INSTALL_IN_COMPONENT stdlib
       )
     swift_install_in_component(

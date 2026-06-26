@@ -22,6 +22,8 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
   add_dependencies(embedded-libraries embedded-posix-shim)
   add_custom_target(embedded-single-threaded-shim)
   add_dependencies(embedded-libraries embedded-single-threaded-shim)
+  add_custom_target(embedded-multithreaded-posix-shim)
+  add_dependencies(embedded-libraries embedded-multithreaded-posix-shim)
 
   foreach(entry ${EMBEDDED_STDLIB_TARGET_TRIPLES})
     string(REGEX REPLACE "[ \t]+" ";" list "${entry}")
@@ -112,5 +114,37 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
     set_property(TARGET embedded-single-threaded-shim-${mod} PROPERTY OSX_ARCHITECTURES "${arch}")
 
     add_dependencies(embedded-single-threaded-shim embedded-single-threaded-shim-${mod})
+
+    add_swift_target_library_single(
+      embedded-multithreaded-posix-shim-${mod}
+      swiftEmbeddedPlatformMultiThreadedPOSIX
+      STATIC
+      IS_FRAGILE
+
+      EmbeddedPlatformPOSIX.swift
+      EmbeddedPlatformMultiThreadedPOSIX.swift
+
+      C_COMPILE_FLAGS ${extra_c_compile_flags}
+      SWIFT_COMPILE_FLAGS ${swift_stdlib_compile_flags} -Xcc -ffreestanding -enable-experimental-feature Embedded "-import-bridging-header" ${CMAKE_CURRENT_SOURCE_DIR}/EmbeddedPlatformFreestandingPThread.h -enable-experimental-feature Extern -enable-experimental-feature AllowRuntimeSymbolDeclarations "-disable-bridging-pch"
+      MODULE_DIR "${CMAKE_BINARY_DIR}/lib/swift/embedded"
+      SDK "embedded"
+      ARCHITECTURE "${mod}"
+      DEPENDS embedded-stdlib-${mod}
+      INSTALL_IN_COMPONENT stdlib
+      )
+    swift_install_in_component(
+      TARGETS embedded-multithreaded-posix-shim-${mod}
+      DESTINATION "lib/swift/embedded/${mod}"
+      COMPONENT "stdlib"
+      )
+    swift_install_in_component(
+      FILES "${SWIFTLIB_DIR}/embedded/${mod}/libswiftEmbeddedPlatformMultiThreadedPOSIX.a"
+      DESTINATION "lib/swift/embedded/${mod}/"
+      COMPONENT "stdlib"
+      PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+      )
+    set_property(TARGET embedded-multithreaded-posix-shim-${mod} PROPERTY OSX_ARCHITECTURES "${arch}")
+
+    add_dependencies(embedded-multithreaded-posix-shim embedded-multithreaded-posix-shim-${mod})
   endforeach()
 endif()

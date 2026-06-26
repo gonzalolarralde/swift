@@ -109,6 +109,10 @@ typedef void (*__swift_tls_dtor_t)(void * EMBEDDED_SWIFT_NULLABLE);
  */
 #define EMBEDDED_SWIFT_PLATFORM_VERSION_MINOR 0
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Determine the version of the platform abstraction layer that the Embedded
  * Swift library was built with.
@@ -444,6 +448,10 @@ __swift_ptrdiff_t _swift_thread_getCurrentStackBounds(
  * function.
  */
 void _swift_exit(__swift_ptrdiff_t code);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #undef EMBEDDED_SWIFT_SINGLE
 #undef EMBEDDED_SWIFT_SIZED_BY
