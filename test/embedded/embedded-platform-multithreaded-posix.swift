@@ -96,6 +96,13 @@ __swift_ptrdiff_t _swift_thread_isMain(void) {
   return 1;
 }
 
+__swift_ptrdiff_t _swift_thread_getCurrentStackBounds(void **low,
+                                                      void **high) {
+  *low = 0;
+  *high = 0;
+  return 0;
+}
+
 void test_swift_once(__swift_once_t *predicate,
                      void (*function)(void *),
                      void *context) {
