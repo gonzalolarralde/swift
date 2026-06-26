@@ -92,8 +92,15 @@ pthread_t pthread_self(void) {
   return 1;
 }
 
-int pthread_equal(pthread_t lhs, pthread_t rhs) {
-  return lhs == rhs;
+__swift_ptrdiff_t _swift_thread_isMain(void) {
+  return 1;
+}
+
+__swift_ptrdiff_t _swift_thread_getCurrentStackBounds(void **low,
+                                                      void **high) {
+  *low = (void *)0x1000;
+  *high = (void *)0x2000;
+  return 1;
 }
 
 void test_swift_once(__swift_once_t *predicate,
@@ -149,6 +156,12 @@ func _swift_thread_getCurrentId() -> Int
 
 @_extern(c, "_swift_thread_isMain")
 func _swift_thread_isMain() -> Int
+
+@_extern(c, "_swift_thread_getCurrentStackBounds")
+func _swift_thread_getCurrentStackBounds(
+  _ low: UnsafeMutablePointer<UnsafeMutableRawPointer?>,
+  _ high: UnsafeMutablePointer<UnsafeMutableRawPointer?>
+) -> Int
 
 func check(_ condition: Bool) {
   if !condition {
@@ -211,5 +224,11 @@ struct Main {
 
     check(_swift_thread_getCurrentId() == 1)
     check(_swift_thread_isMain() != 0)
+
+    var stackLow: UnsafeMutableRawPointer?
+    var stackHigh: UnsafeMutableRawPointer?
+    check(_swift_thread_getCurrentStackBounds(&stackLow, &stackHigh) != 0)
+    check(stackLow == UnsafeMutableRawPointer(bitPattern: 0x1000))
+    check(stackHigh == UnsafeMutableRawPointer(bitPattern: 0x2000))
   }
 }

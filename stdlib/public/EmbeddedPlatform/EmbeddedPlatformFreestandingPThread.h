@@ -54,6 +54,5 @@ void *pthread_getspecific(pthread_key_t key);
 int pthread_setspecific(pthread_key_t key, const void *value);
 
 pthread_t pthread_self(void);
-int pthread_equal(pthread_t lhs, pthread_t rhs);
 
 #endif

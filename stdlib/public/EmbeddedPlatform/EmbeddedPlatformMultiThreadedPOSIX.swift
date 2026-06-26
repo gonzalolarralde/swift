@@ -242,24 +242,7 @@ public func _swift_tls_set(_ key: Int, _ value: UnsafeMutableRawPointer?) {
   }
 }
 
-let _swift_embedded_platform_main_thread = pthread_self()
-
 @implementation @c
 public func _swift_thread_getCurrentId() -> Int {
   pthread_self()
-}
-
-@implementation @c
-public func _swift_thread_isMain() -> Int {
-  pthread_equal(pthread_self(), _swift_embedded_platform_main_thread) != 0 ? 1 : 0
-}
-
-@implementation @c
-public func _swift_thread_getCurrentStackBounds(
-  _ low: UnsafeMutablePointer<UnsafeMutableRawPointer?>,
-  _ high: UnsafeMutablePointer<UnsafeMutableRawPointer?>
-) -> Int {
-  low.pointee = nil
-  high.pointee = nil
-  return 0
 }
