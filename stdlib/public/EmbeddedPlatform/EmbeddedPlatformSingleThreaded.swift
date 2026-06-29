@@ -75,25 +75,9 @@ public func _swift_mutex_tryLock(_ mutex: UnsafeMutableRawPointer) -> Int {
   return 1
 }
 
-@implementation @c
-public func _swift_once(
-  _ predicate: UnsafeMutablePointer<Int>,
-  _ function: @convention(c) (UnsafeMutableRawPointer?) -> Void,
-  _ context: UnsafeMutableRawPointer?
-) {
-  if predicate.pointee != 0 {
-    return
-  }
-
-  predicate.pointee = 1
-  function(context)
-}
-
 fileprivate struct SingleThreadedTLS {
-  static let reservedKeyCount = 8
-  static let keyCount = 24
-  static var nextDynamicKey = reservedKeyCount
-  static var values = [24 of UnsafeMutableRawPointer?](repeating: nil)
+  static let keyCount = 8
+  static var values = [8 of UnsafeMutableRawPointer?](repeating: nil)
 }
 
 @implementation @c
@@ -102,20 +86,6 @@ public func _swift_tls_init(
   _ destructor: (@convention(c) (UnsafeMutableRawPointer?) -> Void)?
 ) -> Int {
   key < SingleThreadedTLS.keyCount ? 1 : 0
-}
-
-@implementation @c
-public func _swift_tls_alloc(
-  _ key: UnsafeMutablePointer<Int>,
-  _ destructor: (@convention(c) (UnsafeMutableRawPointer?) -> Void)?
-) -> Int {
-  if SingleThreadedTLS.nextDynamicKey >= SingleThreadedTLS.keyCount {
-    return 0
-  }
-
-  key.pointee = SingleThreadedTLS.nextDynamicKey
-  SingleThreadedTLS.nextDynamicKey += 1
-  return 1
 }
 
 @implementation @c
@@ -135,21 +105,6 @@ public func _swift_tls_set(_ key: Int, _ value: UnsafeMutableRawPointer?) {
 }
 
 @implementation @c
-public func _swift_thread_getCurrentId() -> Int {
-  0
-}
-
-@implementation @c
 public func _swift_thread_isMain() -> Int {
   1
-}
-
-@implementation @c
-public func _swift_thread_getCurrentStackBounds(
-  _ low: UnsafeMutablePointer<UnsafeMutableRawPointer?>,
-  _ high: UnsafeMutablePointer<UnsafeMutableRawPointer?>
-) -> Int {
-  low.pointee = nil
-  high.pointee = nil
-  return 0
 }

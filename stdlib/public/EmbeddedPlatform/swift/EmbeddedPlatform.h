@@ -47,9 +47,7 @@ typedef unsigned long long __swift_typeid_t;
  */
 typedef unsigned long long __swift_options_t;
 
-typedef __swift_ptrdiff_t __swift_once_t;
 typedef __swift_ptrdiff_t __swift_tls_key_t;
-typedef __swift_ptrdiff_t __swift_thread_id_t;
 
 /**
  * Number of reserved TLS keys used by Embedded Swift runtime components.
@@ -368,17 +366,6 @@ void _swift_mutex_unlock(void * EMBEDDED_SWIFT_NONNULL mutex);
 __swift_ptrdiff_t _swift_mutex_tryLock(void * EMBEDDED_SWIFT_NONNULL mutex);
 
 /**
- * Runs `function(context)` exactly once for a statically allocated predicate.
- *
- * This hook is used by the embedded threading implementation. It is distinct
- * from the compiler/runtime `swift_once` entry point.
- */
-void _swift_once(__swift_once_t * EMBEDDED_SWIFT_NONNULL predicate,
-                 void (* EMBEDDED_SWIFT_NONNULL function)(
-                     void * EMBEDDED_SWIFT_NULLABLE),
-                 void * EMBEDDED_SWIFT_NULLABLE context);
-
-/**
  * Initializes a reserved TLS key. `key` is one of the numeric reserved keys
  * described by `__SWIFT_TLS_KEY_COUNT`. `destructor` may be NULL.
  *
@@ -386,15 +373,6 @@ void _swift_once(__swift_once_t * EMBEDDED_SWIFT_NONNULL predicate,
  */
 __swift_ptrdiff_t _swift_tls_init(
     __swift_tls_key_t key,
-    __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
-
-/**
- * Allocates a dynamic TLS key and writes it into `key`.
- *
- * Returns nonzero if the key was allocated, or zero on failure.
- */
-__swift_ptrdiff_t _swift_tls_alloc(
-    __swift_tls_key_t * EMBEDDED_SWIFT_NONNULL key,
     __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
 
 /**
@@ -410,26 +388,10 @@ void _swift_tls_set(__swift_tls_key_t key,
                     void * EMBEDDED_SWIFT_NULLABLE value);
 
 /**
- * Returns an identifier for the current execution context. Identifiers only
- * need to compare equal for the same context during its lifetime.
- */
-__swift_thread_id_t _swift_thread_getCurrentId(void);
-
-/**
  * Returns nonzero when the current execution context is the platform's main
  * execution context.
  */
 __swift_ptrdiff_t _swift_thread_isMain(void);
-
-/**
- * Writes the current execution context's stack bounds into `low` and `high`.
- *
- * Optional: returns nonzero if bounds were written, or zero if stack bounds are
- * not available on this platform.
- */
-__swift_ptrdiff_t _swift_thread_getCurrentStackBounds(
-    void * EMBEDDED_SWIFT_NULLABLE * EMBEDDED_SWIFT_NONNULL low,
-    void * EMBEDDED_SWIFT_NULLABLE * EMBEDDED_SWIFT_NONNULL high);
 
 /**
  * Exit the program.

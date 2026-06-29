@@ -36,12 +36,15 @@ static_assert(__SWIFT_TLS_KEY_COUNT ==
               "EmbeddedPlatform TLS key count must match TLSKeys.h");
 
 namespace swift {
+
+void swift_once(intptr_t *predicate, void (*fn)(void *), void *context);
+
 namespace threading_impl {
 
-using thread_id = __swift_thread_id_t;
+using thread_id = uintptr_t;
 
 inline thread_id thread_get_current() {
-  return _swift_thread_getCurrentId();
+  return 0;
 }
 
 inline bool thread_is_main() {
@@ -53,11 +56,7 @@ inline bool threads_same(thread_id a, thread_id b) {
 }
 
 inline std::optional<stack_bounds> thread_get_current_stack_bounds() {
-  void *low = nullptr;
-  void *high = nullptr;
-  if (!_swift_thread_getCurrentStackBounds(&low, &high))
-    return {};
-  return stack_bounds{low, high};
+  return {};
 }
 
 struct mutex_handle {
@@ -114,10 +113,10 @@ inline void recursive_mutex_unlock(recursive_mutex_handle &handle) {
   _swift_mutex_unlock(&handle);
 }
 
-using once_t = __swift_once_t;
+using once_t = intptr_t;
 
 inline void once_impl(once_t &predicate, void (*fn)(void *), void *ctx) {
-  _swift_once(&predicate, fn, ctx);
+  ::swift::swift_once(&predicate, fn, ctx);
 }
 
 using tls_key_t = __swift_tls_key_t;
@@ -129,10 +128,6 @@ inline tls_key_t tls_get_key(swift::tls_key key) {
 
 inline bool tls_init(tls_key_t key, tls_dtor_t dtor) {
   return _swift_tls_init(key, dtor) != 0;
-}
-
-inline bool tls_alloc(tls_key_t &key, tls_dtor_t dtor) {
-  return _swift_tls_alloc(&key, dtor) != 0;
 }
 
 inline void *tls_get(tls_key_t key) {
