@@ -305,6 +305,8 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB AND SWIFT_SHOULD_BUILD_EMBEDDED_CONCURRENC
   set(SWIFT_STDLIB_HAS_ENVIRON FALSE)
   set(SWIFT_STDLIB_HAS_ASL FALSE)
   list(APPEND LLVM_OPTIONAL_SOURCES ExecutorImpl.cpp)
+  set(SWIFT_SDK_embedded_CONCURRENCY_THREADING_PACKAGE
+      "${SWIFT_SDK_embedded_THREADING_PACKAGE}")
 
   # Under Embedded Swift, all stdlib APIs should be available always. Replace
   # all availability macros with an empty expansion (`*`).
@@ -374,7 +376,11 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB AND SWIFT_SHOULD_BUILD_EMBEDDED_CONCURRENC
       )
     endif()
 
-    set(SWIFT_SDK_embedded_THREADING_PACKAGE none)
+    set(SWIFT_SDK_embedded_THREADING_PACKAGE
+        "${SWIFT_SDK_embedded_CONCURRENCY_THREADING_PACKAGE}")
+    if(NOT SWIFT_USE_SWIFT_EMBEDDED_PLATFORM OR "${arch}" MATCHES "wasm32")
+      set(SWIFT_SDK_embedded_THREADING_PACKAGE none)
+    endif()
     set(SWIFT_SDK_embedded_ARCH_${arch}_MODULE "${mod}")
     set(SWIFT_SDK_embedded_ARCH_${mod}_MODULE "${mod}")
     set(SWIFT_SDK_embedded_LIB_SUBDIR "embedded")
