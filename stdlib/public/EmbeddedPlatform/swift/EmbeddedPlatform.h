@@ -53,7 +53,9 @@ typedef __swift_ptrdiff_t __swift_tls_key_t;
  * Number of reserved TLS keys used by Embedded Swift runtime components.
  *
  * The numeric values are kept in sync with the reserved keys in
- * swift/Threading/TLSKeys.h.
+ * swift/Threading/TLSKeys.h. The EmbeddedPlatform TLS contract does not
+ * provide dynamic key allocation; every key passed to the `_swift_tls_*`
+ * functions will be one of these reserved values.
  */
 #define __SWIFT_TLS_KEY_COUNT 8
 

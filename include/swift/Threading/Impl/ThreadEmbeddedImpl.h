@@ -32,7 +32,7 @@
 #define SWIFT_THREADING_HAS_CONDITION_VARIABLE 0
 
 static_assert(__SWIFT_TLS_KEY_COUNT ==
-                  static_cast<unsigned>(swift::tls_key::exclusivity) + 1,
+                  static_cast<int>(swift::tls_key::exclusivity) + 1,
               "EmbeddedPlatform TLS key count must match TLSKeys.h");
 
 namespace swift {
@@ -60,7 +60,7 @@ inline std::optional<stack_bounds> thread_get_current_stack_bounds() {
 }
 
 struct mutex_handle {
-  uintptr_t storage[6] = {};
+  uintptr_t storage[8] = {};
 };
 
 inline void mutex_init(mutex_handle &handle, bool checked = false) {

@@ -113,8 +113,9 @@ template <class T> struct TLSPointer {
 //   then create an ordinary global.
 //
 // - On platforms that don't define SWIFT_THREAD_LOCAL, we have to simulate
-//   thread-local storage.  Fortunately, all of these platforms (at least
-//   for now) support pthread_getspecific or similar.
+//   thread-local storage. Some implementations allocate keys dynamically with
+//   pthread_getspecific or similar, while others provide a fixed set of
+//   reserved keys.
 #ifdef SWIFT_THREAD_LOCAL
 template <class T>
 class ThreadLocal {
