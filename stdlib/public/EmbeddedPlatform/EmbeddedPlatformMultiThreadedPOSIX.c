@@ -24,6 +24,9 @@
 
 #include <pthread.h>
 
+static pthread_t swift_embedded_platform_main_thread;
+static pthread_key_t swift_embedded_platform_tls_keys[SWIFT_TLS_KEY_COUNT];
+
 #if __STDC_VERSION__ >= 201112L
 _Static_assert(sizeof(pthread_mutex_t) <= 8 * sizeof(void *),
                "pthread_mutex_t does not fit in the Embedded Swift Platform "
@@ -41,6 +44,16 @@ static void trap_if(int failed) {
     *(volatile int*)0x11 = 0;
 #endif
   }
+}
+
+__attribute__((constructor))
+static void swift_embedded_platform_remember_main_thread(void) {
+  swift_embedded_platform_main_thread = pthread_self();
+}
+
+static pthread_key_t swift_embedded_platform_tls_key(__swift_tls_key_t key) {
+  trap_if(key < 0 || key >= SWIFT_TLS_KEY_COUNT);
+  return swift_embedded_platform_tls_keys[key];
 }
 
 void _swift_mutex_init(void *mutex, swift_mutex_flags_t flags) {
@@ -79,4 +92,22 @@ void _swift_mutex_unlock(void *mutex) {
 
 __swift_ptrdiff_t _swift_mutex_tryLock(void *mutex) {
   return pthread_mutex_trylock((pthread_mutex_t *)mutex) == 0 ? 1 : 0;
+}
+
+void _swift_tls_init(__swift_tls_key_t key, __swift_tls_dtor_t destructor) {
+  trap_if(key < 0 || key >= SWIFT_TLS_KEY_COUNT);
+  trap_if(pthread_key_create(&swift_embedded_platform_tls_keys[key],
+                             destructor) != 0);
+}
+
+void *_swift_tls_get(__swift_tls_key_t key) {
+  return pthread_getspecific(swift_embedded_platform_tls_key(key));
+}
+
+void _swift_tls_set(__swift_tls_key_t key, void *value) {
+  trap_if(pthread_setspecific(swift_embedded_platform_tls_key(key), value) != 0);
+}
+
+__swift_ptrdiff_t _swift_thread_isMain(void) {
+  return pthread_equal(pthread_self(), swift_embedded_platform_main_thread) != 0;
 }
