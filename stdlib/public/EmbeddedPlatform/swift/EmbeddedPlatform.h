@@ -57,7 +57,7 @@ typedef __swift_ptrdiff_t __swift_tls_key_t;
  * provide dynamic key allocation; every key passed to the `_swift_tls_*`
  * functions will be one of these reserved values.
  */
-#define __SWIFT_TLS_KEY_COUNT 8
+#define SWIFT_TLS_KEY_COUNT 8
 
 #if __has_feature(nullability)
 #define EMBEDDED_SWIFT_NONNULL _Nonnull
@@ -369,13 +369,10 @@ __swift_ptrdiff_t _swift_mutex_tryLock(void * EMBEDDED_SWIFT_NONNULL mutex);
 
 /**
  * Initializes a reserved TLS key. `key` is one of the numeric reserved keys
- * described by `__SWIFT_TLS_KEY_COUNT`. `destructor` may be NULL.
- *
- * Returns nonzero if the platform supports the requested key.
+ * described by `SWIFT_TLS_KEY_COUNT`. `destructor` may be NULL.
  */
-__swift_ptrdiff_t _swift_tls_init(
-    __swift_tls_key_t key,
-    __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
+void _swift_tls_init(__swift_tls_key_t key,
+                     __swift_tls_dtor_t EMBEDDED_SWIFT_NULLABLE destructor);
 
 /**
  * Returns the value stored for a TLS key in the current execution context, or

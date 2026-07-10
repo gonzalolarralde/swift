@@ -84,23 +84,17 @@ fileprivate struct SingleThreadedTLS {
 public func _swift_tls_init(
   _ key: Int,
   _ destructor: (@convention(c) (UnsafeMutableRawPointer?) -> Void)?
-) -> Int {
-  (key >= 0 && key < SingleThreadedTLS.keyCount) ? 1 : 0
+) {
+  _ = SingleThreadedTLS.values[key]
 }
 
 @implementation @c
 public func _swift_tls_get(_ key: Int) -> UnsafeMutableRawPointer? {
-  if key < 0 || key >= SingleThreadedTLS.keyCount {
-    return nil
-  }
   return SingleThreadedTLS.values[key]
 }
 
 @implementation @c
 public func _swift_tls_set(_ key: Int, _ value: UnsafeMutableRawPointer?) {
-  if key < 0 || key >= SingleThreadedTLS.keyCount {
-    return
-  }
   SingleThreadedTLS.values[key] = value
 }
 

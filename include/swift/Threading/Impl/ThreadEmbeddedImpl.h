@@ -31,7 +31,7 @@
 #define SWIFT_THREADING_HAS_LAZY_MUTEX 0
 #define SWIFT_THREADING_HAS_CONDITION_VARIABLE 0
 
-static_assert(__SWIFT_TLS_KEY_COUNT ==
+static_assert(SWIFT_TLS_KEY_COUNT ==
                   static_cast<int>(swift::tls_key::exclusivity) + 1,
               "EmbeddedPlatform TLS key count must match TLSKeys.h");
 
@@ -127,7 +127,8 @@ inline tls_key_t tls_get_key(swift::tls_key key) {
 }
 
 inline bool tls_init(tls_key_t key, tls_dtor_t dtor) {
-  return _swift_tls_init(key, dtor) != 0;
+  _swift_tls_init(key, dtor);
+  return true;
 }
 
 inline void *tls_get(tls_key_t key) {
