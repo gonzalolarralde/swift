@@ -29,7 +29,15 @@
 #include <pthread.h>
 #include <stdint.h>
 
-static pthread_key_t swift_embedded_platform_tls_keys[SWIFT_TLS_KEY_COUNT];
+#if __has_include(<pthread/tsd_private.h>)
+#include <pthread/tsd_private.h>
+#else
+#define __PTK_FRAMEWORK_SWIFT_KEY0 100
+#endif
+
+#define SWIFT_EMBEDDED_PLATFORM_DARWIN_TLS_KEY_BASE __PTK_FRAMEWORK_SWIFT_KEY0
+
+extern int pthread_key_init_np(int, void (*)(void *));
 
 // Storage layout that we impose on the caller-owned mutex buffer. `flags` is
 // used as the discriminator between the two backends: if it has
@@ -62,7 +70,7 @@ static void trap_if(int failed) {
 
 static pthread_key_t swift_embedded_platform_tls_key(__swift_tls_key_t key) {
   trap_if(key < 0 || key >= SWIFT_TLS_KEY_COUNT);
-  return swift_embedded_platform_tls_keys[key];
+  return SWIFT_EMBEDDED_PLATFORM_DARWIN_TLS_KEY_BASE + key;
 }
 
 void _swift_mutex_init(void *mutex, swift_mutex_flags_t flags) {
@@ -130,9 +138,9 @@ __swift_ptrdiff_t _swift_mutex_tryLock(void *mutex) {
 }
 
 void _swift_tls_init(__swift_tls_key_t key, __swift_tls_dtor_t destructor) {
-  trap_if(key < 0 || key >= SWIFT_TLS_KEY_COUNT);
-  trap_if(pthread_key_create(&swift_embedded_platform_tls_keys[key],
-                             destructor) != 0);
+  trap_if(
+      pthread_key_init_np((int)swift_embedded_platform_tls_key(key),
+                          destructor) != 0);
 }
 
 void *_swift_tls_get(__swift_tls_key_t key) {

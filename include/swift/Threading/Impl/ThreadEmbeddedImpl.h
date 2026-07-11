@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include "swift/EmbeddedPlatform.h"
+#include "swift/shims/Visibility.h"
 
 #define SWIFT_THREADING_USE_RESERVED_TLS_KEYS 1
 #define SWIFT_THREADING_HAS_LAZY_MUTEX 0
@@ -37,10 +38,12 @@ static_assert(SWIFT_TLS_KEY_COUNT ==
 
 namespace swift {
 
+SWIFT_RUNTIME_EXPORT
 void swift_once(intptr_t *predicate, void (*fn)(void *), void *context);
 
 namespace threading_impl {
 
+using once_t = intptr_t;
 using thread_id = uintptr_t;
 
 inline thread_id thread_get_current() {
@@ -112,8 +115,6 @@ inline void recursive_mutex_lock(recursive_mutex_handle &handle) {
 inline void recursive_mutex_unlock(recursive_mutex_handle &handle) {
   _swift_mutex_unlock(&handle);
 }
-
-using once_t = intptr_t;
 
 inline void once_impl(once_t &predicate, void (*fn)(void *), void *ctx) {
   ::swift::swift_once(&predicate, fn, ctx);
