@@ -381,11 +381,15 @@ void _swift_tls_init(__swift_tls_key_t key,
 /**
  * Returns the value stored for a TLS key in the current execution context, or
  * NULL if no value has been stored.
+ *
+ * Precondition: `key < SWIFT_TLS_KEY_COUNT`.
  */
 void * EMBEDDED_SWIFT_NULLABLE _swift_tls_get(__swift_tls_key_t key);
 
 /**
  * Stores a value for a TLS key in the current execution context.
+ *
+ * Precondition: `key < SWIFT_TLS_KEY_COUNT`.
  */
 void _swift_tls_set(__swift_tls_key_t key,
                     void * EMBEDDED_SWIFT_NULLABLE value);
