@@ -22,11 +22,52 @@ private func _swift_writeToStandardOutput(
   _ pointer: UnsafePointer<UInt8>?,
   _ count: Int
 ) -> CInt
+
+@_extern(c, "_swift_lockStandardOutput")
+private func _swift_lockStandardOutput()
+
+@_extern(c, "_swift_unlockStandardOutput")
+private func _swift_unlockStandardOutput()
 #else
 @_extern(c, "putchar")
 func putchar(_: CInt) -> CInt
+
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+@_silgen_name("__stdoutp")
+nonisolated(unsafe) private var _embeddedStdout: UnsafeMutableRawPointer
+#elseif os(Linux)
+@_silgen_name("stdout")
+nonisolated(unsafe) private var _embeddedStdout: UnsafeMutableRawPointer
 #endif
 
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS) || os(Linux)
+@_extern(c, "flockfile")
+private func _embedded_flockfile(_ stream: UnsafeMutableRawPointer)
+
+@_extern(c, "funlockfile")
+private func _embedded_funlockfile(_ stream: UnsafeMutableRawPointer)
+#endif
+#endif
+
+// Hold the recursive stream lock across every write in a print call, including
+// its terminator. The non-PAL freestanding path retains its putchar-only ABI.
+@usableFromInline
+internal func _lockEmbeddedStdout() {
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+  _swift_lockStandardOutput()
+#elseif os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS) || os(Linux)
+  unsafe _embedded_flockfile(_embeddedStdout)
+#endif
+}
+
+@usableFromInline
+internal func _unlockEmbeddedStdout() {
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+  _swift_unlockStandardOutput()
+#elseif os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS) || os(Linux)
+  unsafe _embedded_funlockfile(_embeddedStdout)
+#endif
+}
 
 @usableFromInline
 internal func writeChars(_ chars: UnsafeBufferPointer<UInt8>) {
@@ -57,6 +98,8 @@ extension String {
 
 @inline(never)
 public func print(_ string: StaticString, terminator: StaticString = "\n") {
+  _lockEmbeddedStdout()
+  defer { _unlockEmbeddedStdout() }
   string.writeToStandardOutput()
   terminator.writeToStandardOutput()
 }
@@ -64,6 +107,8 @@ public func print(_ string: StaticString, terminator: StaticString = "\n") {
 @_disfavoredOverload
 @inline(never)
 public func print(_ string: String, terminator: StaticString = "\n") {
+  _lockEmbeddedStdout()
+  defer { _unlockEmbeddedStdout() }
   var string = string
   string.writeToStandardOutput()
   terminator.writeToStandardOutput()
@@ -72,6 +117,8 @@ public func print(_ string: String, terminator: StaticString = "\n") {
 @_disfavoredOverload
 @inline(never)
 public func print(_ object: some CustomStringConvertible, terminator: StaticString = "\n") {
+  _lockEmbeddedStdout()
+  defer { _unlockEmbeddedStdout() }
   var string = object.description
   string.writeToStandardOutput()
   terminator.writeToStandardOutput()
@@ -79,6 +126,8 @@ public func print(_ object: some CustomStringConvertible, terminator: StaticStri
 
 @inline(never)
 func print(_ buf: UnsafeBufferPointer<UInt8>, terminator: StaticString = "\n") {
+  _lockEmbeddedStdout()
+  defer { _unlockEmbeddedStdout() }
   unsafe writeChars(buf)
   terminator.writeToStandardOutput()
 }
@@ -145,11 +194,15 @@ extension BinaryInteger {
 
 @inline(never)
 public func print(_ integer: some BinaryInteger, terminator: StaticString = "\n") {
+  _lockEmbeddedStdout()
+  defer { _unlockEmbeddedStdout() }
   integer.writeToStdout(radix: 10)
   print("", terminator: terminator)
 }
 
 internal func printAsHex(_ integer: some BinaryInteger, terminator: StaticString = "\n") {
+  _lockEmbeddedStdout()
+  defer { _unlockEmbeddedStdout() }
   integer.writeToStdout(radix: 16)
   print("", terminator: terminator)
 }

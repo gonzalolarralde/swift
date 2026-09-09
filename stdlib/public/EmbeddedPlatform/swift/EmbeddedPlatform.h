@@ -128,7 +128,7 @@ typedef void (*__swift_tls_dtor_t)(void * EMBEDDED_SWIFT_NULLABLE);
  * entrypoints might be optional, where the entrypoint is needed only when
  * certain Swift functionality is used.
  */
-#define EMBEDDED_SWIFT_PLATFORM_VERSION_MINOR 1
+#define EMBEDDED_SWIFT_PLATFORM_VERSION_MINOR 2
 
 #if defined(__cplusplus)
 extern "C" {
@@ -344,6 +344,30 @@ void * EMBEDDED_SWIFT_NULLABLE _swift_typedAllocate(
 void _swift_typedDeallocate(void * EMBEDDED_SWIFT_NONNULL ptr, __swift_size_t size, __swift_size_t alignment, swift_dealloc_flags_t flags, __swift_typeid_t typeId);
 
 /**
+ * Acquires the standard output stream lock.
+ *
+ * Embedded Swift holds this lock across a complete print operation, including
+ * its terminator. The lock must be recursive: formatting a value can itself
+ * call print, and output writes may acquire the same stream lock internally.
+ * Each acquisition must be paired with `_swift_unlockStandardOutput` in the
+ * same execution context.
+ *
+ * This function is required when using the Embedded Swift print() facilities.
+ * A hosted implementation can call flockfile(stdout), coordinating with other
+ * C stdio writers. A custom platform can use a recursive mutex, or a no-op
+ * when output is restricted to a single execution context.
+ */
+void _swift_lockStandardOutput(void);
+
+/**
+ * Releases one level of ownership of the standard output stream lock.
+ *
+ * This function is required when using the Embedded Swift print() facilities.
+ * A hosted implementation can call funlockfile(stdout).
+ */
+void _swift_unlockStandardOutput(void);
+
+/**
  * Writes a sequence of UTF-8 code points to standard output.
  *
  * - Parameters:
@@ -357,6 +381,10 @@ void _swift_typedDeallocate(void * EMBEDDED_SWIFT_NONNULL ptr, __swift_size_t si
  *
  * This function can be implemented as a call to fwrite or printf with the
  * specified number of code points.
+ *
+ * This function can be called with the standard output stream lock held.
+ * A single print operation can invoke it multiple times. Locking only within
+ * this function does not serialize an entire print operation.
  */
 __swift_size_t _swift_writeToStandardOutput(
     const unsigned char * EMBEDDED_SWIFT_NULLABLE EMBEDDED_SWIFT_COUNTED_BY(count) chars,

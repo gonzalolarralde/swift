@@ -560,13 +560,17 @@ internal struct _Stdout: TextOutputStream {
   internal init() {}
 
   internal mutating func _lock() {
-    #if !$Embedded
+    #if $Embedded
+    _lockEmbeddedStdout()
+    #else
     _swift_stdlib_flockfile_stdout()
     #endif
   }
 
   internal mutating func _unlock() {
-    #if !$Embedded
+    #if $Embedded
+    _unlockEmbeddedStdout()
+    #else
     _swift_stdlib_funlockfile_stdout()
     #endif
   }
