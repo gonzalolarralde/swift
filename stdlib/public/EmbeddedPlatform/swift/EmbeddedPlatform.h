@@ -138,7 +138,7 @@ typedef void (*__swift_tls_dtor_t)(void * EMBEDDED_SWIFT_NULLABLE);
  * entrypoints might be optional, where the entrypoint is needed only when
  * certain Swift functionality is used.
  */
-#define EMBEDDED_SWIFT_PLATFORM_VERSION_MINOR 2
+#define EMBEDDED_SWIFT_PLATFORM_VERSION_MINOR 3
 
 #if defined(__cplusplus)
 extern "C" {
@@ -641,17 +641,12 @@ __swift_ptrdiff_t _swift_thread_isMain(void);
 void _swift_exit(int code) EMBEDDED_SWIFT_NORETURN;
 
 /*
- * The runtime's clock entry points reference the five clock functions below
- * in three groups: reading the time of either clock references both
- * *_getTime functions, reading either clock's resolution references both
- * *_getResolution functions, and the default cooperative global executor's
- * wait loop references _swift_clock_sleep. A referenced function must
- * resolve at link time even if it is never called. With function-level dead
- * stripping, only the groups whose entry points survive the link are
- * referenced; without it, linking the runtime references all five.
- * Providing all five is therefore always safe: one that a platform cannot
- * usefully implement can be a trap, or an alias of another clock, as
- * described on each function.
+ * Swift's clock APIs call the corresponding platform functions directly.
+ * With function-level dead stripping, a program that only reads one clock
+ * does not need to implement the other clock or the blocking sleep hook.
+ * The C executor interfaces accept runtime clock IDs and therefore reference
+ * both clocks. The default cooperative executor also needs the blocking
+ * sleep hook to wait for delayed jobs.
  */
 
 /**

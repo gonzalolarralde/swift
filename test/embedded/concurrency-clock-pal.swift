@@ -23,10 +23,9 @@
 // (3) Only the default cooperative global executor calls the sleep hook. A
 // program with a custom global executor schedules delayed jobs itself, so
 // Task.sleep still works with a clock whose sleep hook traps. The link line
-// spells out %target-embedded-link's archives instead of using the wrapper
-// so that the bundled clock shim stays out — trap-clock.c must be the only
-// clock provider for the trapping sleep hook to prove anything — and the
-// default executor is replaced by the custom one.
+// spells out the archives after the objects that use them. trap-clock.c
+// supplies every clock hook, so the POSIX archive's clock object is not
+// extracted, and the default executor is replaced by the custom one.
 // RUN: %target-swift-frontend -enable-experimental-feature Embedded -parse-as-library %t/executor.swift -c -o %t/executor.o
 // RUN: %target-clang -x c -std=c11 -I %swift_obj_root/include -c %S/Inputs/executor.c -o %t/custom-executor.o
 // RUN: %target-clang %target-clang-resource-dir-opt -I %swift_obj_root/include -x c %t/trap-clock.c -x none %t/executor.o %t/custom-executor.o -o %t/executor.out %swift_obj_root/lib/swift/embedded/%module-target-triple/libswiftCore.a %swift_obj_root/lib/swift/embedded/%module-target-triple/libswiftEmbeddedPlatformPOSIX.a %swift_obj_root/lib/swift/embedded/%module-target-triple/libswift_Concurrency.a %target-embedded-concurrency-threading-shim -dead_strip

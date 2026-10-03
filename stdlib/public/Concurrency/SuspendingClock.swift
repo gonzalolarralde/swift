@@ -63,10 +63,14 @@ extension SuspendingClock: Clock {
   public static var now: SuspendingClock.Instant {
     var seconds = Int64(0)
     var nanoseconds = Int64(0)
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+    unsafe _swift_clockSuspending_getTime(&seconds, &nanoseconds)
+#else
     unsafe _getTime(
       seconds: &seconds,
       nanoseconds: &nanoseconds,
       clock: _ClockID.suspending.rawValue)
+#endif
     return Instant(
       _value: Duration(_seconds: seconds, nanoseconds: nanoseconds)
     )
@@ -77,10 +81,14 @@ extension SuspendingClock: Clock {
   public var minimumResolution: Swift.Duration {
     var seconds = Int64(0)
     var nanoseconds = Int64(0)
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+    unsafe _swift_clockSuspending_getResolution(&seconds, &nanoseconds)
+#else
     unsafe _getClockRes(
       seconds: &seconds,
       nanoseconds: &nanoseconds,
       clock: _ClockID.suspending.rawValue)
+#endif
     return Duration(_seconds: seconds, nanoseconds: nanoseconds)
   }
 
@@ -195,3 +203,15 @@ extension SuspendingClock: Identifiable {
   /// The stable identity of the suspending system clock.
   public var id: SystemClockID { .suspending }
 }
+
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+@_extern(c)
+private func _swift_clockSuspending_getTime(
+  _ seconds: UnsafeMutablePointer<Int64>,
+  _ nanoseconds: UnsafeMutablePointer<Int64>)
+
+@_extern(c)
+private func _swift_clockSuspending_getResolution(
+  _ seconds: UnsafeMutablePointer<Int64>,
+  _ nanoseconds: UnsafeMutablePointer<Int64>)
+#endif

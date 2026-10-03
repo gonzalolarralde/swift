@@ -196,7 +196,11 @@ internal func _getClockRes(
   clock: CInt)
 
 @available(StdlibDeploymentTarget 6.3, *)
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+@_extern(c, "_swift_clock_sleep")
+#else
 @_silgen_name("swift_sleep")
+#endif
 internal func _sleep(
   seconds: Int64,
   nanoseconds: Int64)
