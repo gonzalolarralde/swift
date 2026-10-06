@@ -13,6 +13,60 @@
 #include "swift/Runtime/Concurrency.h"
 #include "swift/Runtime/Once.h"
 
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+#include "swift/EmbeddedPlatform.h"
+#include "Error.h"
+
+using namespace swift;
+
+// The C executor interface accepts a runtime clock ID. Swift's clock APIs
+// call their individual platform hooks directly and do not use this bridge.
+SWIFT_EXPORT_FROM(swift_Concurrency)
+SWIFT_CC(swift)
+void swift_get_time(long long *seconds, long long *nanoseconds,
+                    swift_clock_id clock_id) {
+  __swift_int64_t s, ns;
+  switch (clock_id) {
+  case swift_clock_id_continuous:
+    _swift_clockContinuous_getTime(&s, &ns);
+    break;
+  case swift_clock_id_suspending:
+    _swift_clockSuspending_getTime(&s, &ns);
+    break;
+  default:
+    swift_Concurrency_fatalError(0, "Fatal error: invalid clock ID %d\n",
+                                clock_id);
+  }
+  *seconds = s;
+  *nanoseconds = ns;
+}
+
+SWIFT_EXPORT_FROM(swift_Concurrency)
+SWIFT_CC(swift)
+void swift_get_clock_res(long long *seconds, long long *nanoseconds,
+                         swift_clock_id clock_id) {
+  __swift_int64_t s, ns;
+  switch (clock_id) {
+  case swift_clock_id_continuous:
+    _swift_clockContinuous_getResolution(&s, &ns);
+    break;
+  case swift_clock_id_suspending:
+    _swift_clockSuspending_getResolution(&s, &ns);
+    break;
+  default:
+    swift_Concurrency_fatalError(0, "Fatal error: invalid clock ID %d\n",
+                                clock_id);
+  }
+  *seconds = s;
+  *nanoseconds = ns;
+}
+
+SWIFT_EXPORT_FROM(swift_Concurrency)
+SWIFT_CC(swift)
+void swift_sleep(long long seconds, long long nanoseconds) {
+  _swift_clock_sleep(seconds, nanoseconds);
+}
+#else
 #include <errno.h>
 #include <time.h>
 #if defined(_WIN32)
@@ -258,3 +312,5 @@ void swift_sleep(
   #error Missing platform sleep definition
 #endif
 }
+
+#endif // SWIFT_USE_EMBEDDED_SWIFT_PLATFORM

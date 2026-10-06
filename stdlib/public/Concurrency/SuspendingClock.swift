@@ -21,7 +21,6 @@ import Swift
 ///
 /// This clock is suitable for high resolution measurements of execution.
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 public struct SuspendingClock: Sendable {
   public struct Instant: Sendable {
     internal var _value: Swift.Duration
@@ -41,7 +40,6 @@ extension SuspendingClock.Instant: Codable {
 #endif
 
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 extension Clock where Self == SuspendingClock {
   /// A clock that measures time that always increments but stops incrementing
   /// while the system is asleep.
@@ -53,7 +51,6 @@ extension Clock where Self == SuspendingClock {
 }
 
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 extension SuspendingClock: Clock {
   /// The current instant accounting for machine suspension.
   @available(StdlibDeploymentTarget 5.7, *)
@@ -66,10 +63,14 @@ extension SuspendingClock: Clock {
   public static var now: SuspendingClock.Instant {
     var seconds = Int64(0)
     var nanoseconds = Int64(0)
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+    unsafe _swift_clockSuspending_getTime(&seconds, &nanoseconds)
+#else
     unsafe _getTime(
       seconds: &seconds,
       nanoseconds: &nanoseconds,
       clock: _ClockID.suspending.rawValue)
+#endif
     return Instant(
       _value: Duration(_seconds: seconds, nanoseconds: nanoseconds)
     )
@@ -80,10 +81,14 @@ extension SuspendingClock: Clock {
   public var minimumResolution: Swift.Duration {
     var seconds = Int64(0)
     var nanoseconds = Int64(0)
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+    unsafe _swift_clockSuspending_getResolution(&seconds, &nanoseconds)
+#else
     unsafe _getClockRes(
       seconds: &seconds,
       nanoseconds: &nanoseconds,
       clock: _ClockID.suspending.rawValue)
+#endif
     return Duration(_seconds: seconds, nanoseconds: nanoseconds)
   }
 
@@ -122,7 +127,6 @@ extension SuspendingClock: Clock {
 }
 
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 extension SuspendingClock {
   @available(SwiftStdlib 5.7, *)
   @export(implementation)
@@ -132,7 +136,6 @@ extension SuspendingClock {
 }
 
 @available(SwiftStdlib 5.7, *)
-@_unavailableInEmbedded
 extension SuspendingClock.Instant: InstantProtocol {
   public static var now: SuspendingClock.Instant { SuspendingClock().now }
 
@@ -200,3 +203,15 @@ extension SuspendingClock: Identifiable {
   /// The stable identity of the suspending system clock.
   public var id: SystemClockID { .suspending }
 }
+
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+@_extern(c)
+private func _swift_clockSuspending_getTime(
+  _ seconds: UnsafeMutablePointer<Int64>,
+  _ nanoseconds: UnsafeMutablePointer<Int64>)
+
+@_extern(c)
+private func _swift_clockSuspending_getResolution(
+  _ seconds: UnsafeMutablePointer<Int64>,
+  _ nanoseconds: UnsafeMutablePointer<Int64>)
+#endif
