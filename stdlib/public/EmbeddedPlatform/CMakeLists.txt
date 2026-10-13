@@ -45,22 +45,39 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
     "-enable-builtin-module"
     "-disable-bridging-pch")
 
-  add_embedded_swift_target_library(
-    embedded-posix-shim
-    swiftEmbeddedPlatformPOSIX
-    PARTIAL_SOURCES_INTENDED
-    NON_EMPTY_OBJECT_FILE
-    DETECT_MALLOC_TYPE
-    DETECT_ARC4RANDOM
+  # Clocks need POSIX headers, whereas the Swift shim also supports bare
+  # metal. Add the C source only for hosted targets with a usable SDK.
+  set(_posix_all_triples "${EMBEDDED_STDLIB_TARGET_TRIPLES}")
+  foreach(entry ${_posix_all_triples})
+    string(REGEX REPLACE "[ \t]+" ";" parts "${entry}")
+    list(GET parts 2 triple)
+    set(_posix_clock_sources)
+    if(NOT "${triple}" MATCHES "-none-|-windows-"
+       AND (NOT "${triple}" MATCHES "-apple-"
+            OR SWIFT_HOST_VARIANT STREQUAL "macosx"))
+      list(APPEND _posix_clock_sources EmbeddedPlatformClockPOSIX.c)
+    endif()
+    set(EMBEDDED_STDLIB_TARGET_TRIPLES "${entry}")
 
-    EmbeddedPlatformPOSIX.swift
+    add_embedded_swift_target_library(
+      embedded-posix-shim
+      swiftEmbeddedPlatformPOSIX
+      PARTIAL_SOURCES_INTENDED
+      NON_EMPTY_OBJECT_FILE
+      DETECT_MALLOC_TYPE
+      DETECT_ARC4RANDOM
 
-    SWIFT_COMPILE_FLAGS ${_embedded_platform_swift_flags}
-    SKIP_MOD_REGEX "-windows-msvc$"
-    SKIP_ARCH_REGEX "avr"
-    ARCHITECTURE_KEY mod
-    INSTALL_IN_COMPONENT stdlib
-  )
+      EmbeddedPlatformPOSIX.swift
+      ${_posix_clock_sources}
+
+      SWIFT_COMPILE_FLAGS ${_embedded_platform_swift_flags}
+      SKIP_MOD_REGEX "-windows-msvc$"
+      SKIP_ARCH_REGEX "avr"
+      ARCHITECTURE_KEY mod
+      INSTALL_IN_COMPONENT stdlib
+    )
+  endforeach()
+  set(EMBEDDED_STDLIB_TARGET_TRIPLES "${_posix_all_triples}")
 
   add_embedded_swift_target_library(
     embedded-single-threaded-shim
@@ -125,4 +142,5 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB)
       INSTALL_IN_COMPONENT stdlib
     )
   endif()
+
 endif()

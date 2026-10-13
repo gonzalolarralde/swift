@@ -21,7 +21,6 @@ import Swift
 ///
 /// This clock is suitable for high resolution measurements of execution.
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 public struct ContinuousClock: Sendable {
   /// A continuous point in time used for `ContinuousClock`.
   public struct Instant: Sendable {
@@ -57,7 +56,6 @@ extension Duration {
 }
 
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 extension Clock where Self == ContinuousClock {
   /// A clock that measures time that always increments but does not stop
   /// incrementing while the system is asleep.
@@ -69,7 +67,6 @@ extension Clock where Self == ContinuousClock {
 }
 
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 extension ContinuousClock: Clock {
   /// The current continuous instant.
   public var now: ContinuousClock.Instant {
@@ -80,10 +77,14 @@ extension ContinuousClock: Clock {
   public var minimumResolution: Swift.Duration {
     var seconds = Int64(0)
     var nanoseconds = Int64(0)
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+    unsafe _swift_clockContinuous_getResolution(&seconds, &nanoseconds)
+#else
     unsafe _getClockRes(
       seconds: &seconds,
       nanoseconds: &nanoseconds,
       clock: _ClockID.continuous.rawValue)
+#endif
     return Duration(_seconds: seconds, nanoseconds: nanoseconds)
   }
 
@@ -91,16 +92,32 @@ extension ContinuousClock: Clock {
   public static var now: ContinuousClock.Instant {
     var seconds = Int64(0)
     var nanoseconds = Int64(0)
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+    unsafe _swift_clockContinuous_getTime(&seconds, &nanoseconds)
+#else
     unsafe _getTime(
       seconds: &seconds,
       nanoseconds: &nanoseconds,
       clock: _ClockID.continuous.rawValue)
+#endif
     return Instant(
       _value: Duration(_seconds: seconds, nanoseconds: nanoseconds)
     )
   }
 
 #if !SWIFT_STDLIB_TASK_TO_THREAD_MODEL_CONCURRENCY
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+  @available(StdlibDeploymentTarget 5.9, *)
+  public func _enqueueJobGlobal(_ job: UnownedJob, until deadline: Instant,
+                                tolerance: Swift.Duration?) {
+    let (seconds, nanoseconds) = durationComponents(for: deadline._value)
+    let (toleranceSeconds, toleranceNanoseconds) =
+      tolerance.map { durationComponents(for: $0) } ?? (0, -1)
+    _enqueueJobGlobalWithContinuousDeadline(
+      seconds, nanoseconds, toleranceSeconds, toleranceNanoseconds, job)
+  }
+#endif
+
   /// Suspend task execution until a given deadline within a tolerance.
   /// If no tolerance is specified then the system may adjust the deadline
   /// to coalesce CPU wake-ups to more efficiently process the wake-ups in
@@ -134,7 +151,6 @@ extension ContinuousClock: Clock {
 }
 
 @available(StdlibDeploymentTarget 5.7, *)
-@_unavailableInEmbedded
 extension ContinuousClock {
   @available(SwiftStdlib 5.7, *)
   @export(implementation)
@@ -144,7 +160,6 @@ extension ContinuousClock {
 }
 
 @available(SwiftStdlib 5.7, *)
-@_unavailableInEmbedded
 extension ContinuousClock.Instant: InstantProtocol {
   public static var now: ContinuousClock.Instant { ContinuousClock.now }
 
@@ -217,3 +232,15 @@ extension ContinuousClock: Identifiable {
   /// The stable identity of the continuous system clock.
   public var id: SystemClockID { .continuous }
 }
+
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+@_extern(c)
+private func _swift_clockContinuous_getTime(
+  _ seconds: UnsafeMutablePointer<Int64>,
+  _ nanoseconds: UnsafeMutablePointer<Int64>)
+
+@_extern(c)
+private func _swift_clockContinuous_getResolution(
+  _ seconds: UnsafeMutablePointer<Int64>,
+  _ nanoseconds: UnsafeMutablePointer<Int64>)
+#endif

@@ -977,6 +977,16 @@ SWIFT_EXPORT_FROM(swift_Concurrency) SWIFT_CC(swift)
 void swift_task_enqueueGlobalWithDeadline(long long sec, long long nsec,
     long long tsec, long long tnsec, int clock, Job *job);
 
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+SWIFT_EXPORT_FROM(swift_Concurrency) SWIFT_CC(swift)
+void swift_task_enqueueGlobalWithContinuousDeadline(long long sec, long long nsec,
+    long long tsec, long long tnsec, Job *job);
+
+SWIFT_EXPORT_FROM(swift_Concurrency) SWIFT_CC(swift)
+void swift_task_enqueueGlobalWithSuspendingDeadline(long long sec, long long nsec,
+    long long tsec, long long tnsec, Job *job);
+#endif
+
 /// Enqueue the given job on the main executor.
 SWIFT_EXPORT_FROM(swift_Concurrency) SWIFT_CC(swift)
 void swift_task_enqueueMainExecutor(Job *job);

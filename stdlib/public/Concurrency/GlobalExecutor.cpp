@@ -125,6 +125,7 @@ extern "C" void _swift_job_run_c(SwiftJob *job, SwiftExecutorRef executor)
 extern "C" SwiftTime swift_time_now(SwiftClockId clock)
 {
   SwiftTime result;
+  // PAL review: the C executor time API still uses the shared clock-ID dispatcher.
   swift_get_time(&result.seconds, &result.nanoseconds, (swift_clock_id)clock);
   return result;
 }

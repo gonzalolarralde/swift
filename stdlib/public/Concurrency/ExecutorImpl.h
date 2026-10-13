@@ -287,6 +287,19 @@ SWIFT_CC(swift) void swift_task_enqueueGlobalWithDeadlineImpl(long long sec,
                                                               int clock,
                                                               SwiftJob * _Nonnull job);
 
+/// PAL executors implement separate deadline entrypoints so using one clock
+/// does not retain the platform hooks for the other clock.
+/// Existing executors may forward these to their clock-ID entrypoint, but
+/// then remain responsible for any dependencies that implementation retains.
+/// Only entrypoints used by the linked program need definitions.
+SWIFT_CC(swift) void swift_task_enqueueGlobalWithContinuousDeadlineImpl(
+    long long sec, long long nsec, long long tsec, long long tnsec,
+    SwiftJob * _Nonnull job);
+
+SWIFT_CC(swift) void swift_task_enqueueGlobalWithSuspendingDeadlineImpl(
+    long long sec, long long nsec, long long tsec, long long tnsec,
+    SwiftJob * _Nonnull job);
+
 /// Enqueue a job on the main executor (which may or may not be the same as
 /// the global executor).
 SWIFT_CC(swift) void swift_task_enqueueMainExecutorImpl(SwiftJob * _Nonnull job);
