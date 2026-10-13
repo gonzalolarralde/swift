@@ -43,7 +43,7 @@ public protocol Clock<Duration>: Sendable {
 #endif
 
 #if $Embedded
-  /// Decompose a deadline for the global executor fallback in `Task._sleep`.
+  /// Decompose a deadline for the non-PAL fallback in `Task._sleep`.
   ///
   /// The fallback needs the deadline as a runtime clock ID plus seconds and
   /// nanoseconds. Outside Embedded Swift it recovers that by dynamic casting
@@ -60,12 +60,31 @@ public protocol Clock<Duration>: Sendable {
   func _timestampComponents(for instant: Instant)
     -> (clockID: Int32, seconds: Int64, nanoseconds: Int64)?
 
-  /// Decompose a tolerance for the global executor fallback in `Task._sleep`,
+  /// Decompose a tolerance for the non-PAL fallback in `Task._sleep`,
   /// as with `_timestampComponents(for:)`.
   func _durationComponents(for duration: Instant.Duration)
     -> (seconds: Int64, nanoseconds: Int64)?
 #endif
+
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM && !SWIFT_STDLIB_TASK_TO_THREAD_MODEL_CONCURRENCY
+  /// Schedule the wake-up job using this clock's runtime entrypoint.
+  /// Embedded specialization makes this a direct call to the concrete clock.
+  @available(StdlibDeploymentTarget 5.9, *)
+  func _enqueueJobGlobal(_ job: UnownedJob, until deadline: Instant,
+                         tolerance: Instant.Duration?)
+#endif
 }
+
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM && !SWIFT_STDLIB_TASK_TO_THREAD_MODEL_CONCURRENCY
+@available(StdlibDeploymentTarget 5.7, *)
+extension Clock {
+  @available(StdlibDeploymentTarget 5.9, *)
+  public func _enqueueJobGlobal(_ job: UnownedJob, until deadline: Instant,
+                                tolerance: Instant.Duration?) {
+    fatalError("unknown clock in fallback path")
+  }
+}
+#endif
 
 #if $Embedded
 @available(StdlibDeploymentTarget 5.7, *)

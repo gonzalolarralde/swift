@@ -176,6 +176,14 @@ extension Task where Success == Never, Failure == Never {
                 fatalError("we shouldn't get here; if we have, availability is broken")
               }
 
+              #if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+              if #available(StdlibDeploymentTarget 5.9, *) {
+                clock._enqueueJobGlobal(UnownedJob(context: job),
+                                        until: instant, tolerance: tolerance)
+              } else {
+                fatalError("we shouldn't get here; if we have, availability is broken")
+              }
+              #else
               // If there is no current scheduling executor, fall back to
               // calling _enqueueJobGlobalWithDeadline().
               let (clockID, seconds, nanoseconds) = timestamp(for: instant,
@@ -202,6 +210,7 @@ extension Task where Success == Never, Failure == Never {
               } else {
                 fatalError("we shouldn't get here; if we have, availability is broken")
               }
+              #endif
               return
 
             case .activeContinuation, .finished:

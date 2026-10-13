@@ -44,6 +44,16 @@ SWIFT_CONCURRENCY_HOOK(void, swift_task_enqueueGlobalWithDeadline,
     long long tnsec,
     int clock, Job *job);
 
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+// PAL clock-specific scheduling uses these hooks, not the legacy clock-ID
+// hook above, whose original-function pointer would retain both clocks.
+SWIFT_CONCURRENCY_HOOK(void, swift_task_enqueueGlobalWithContinuousDeadline,
+    long long sec, long long nsec, long long tsec, long long tnsec, Job *job);
+
+SWIFT_CONCURRENCY_HOOK(void, swift_task_enqueueGlobalWithSuspendingDeadline,
+    long long sec, long long nsec, long long tsec, long long tnsec, Job *job);
+#endif
+
 SWIFT_CONCURRENCY_HOOK(void, swift_task_checkIsolated,
     SerialExecutorRef executor);
 

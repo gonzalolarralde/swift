@@ -42,6 +42,10 @@
 
 #include "ExecutorImpl.h"
 
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+#include "swift/EmbeddedPlatform.h"
+#endif
+
 using namespace swift;
 
 namespace {
@@ -64,16 +68,19 @@ struct JobQueueTraits {
 };
 using JobPriorityQueue = PriorityQueue<SwiftJob*, JobQueueTraits>;
 
-/// A deadline expressed as nanoseconds on the suspending clock — the same
-/// monotonic timebase `swift_get_time(swift_clock_id_suspending, ...)`
-/// reports.
+/// A deadline expressed as nanoseconds on the SuspendingClock timebase.
 using JobDeadline = long long;
 
 /// Read the current time on the suspending clock and return it as a
 /// nanosecond count.
 static JobDeadline currentSuspendingNanos() {
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+  __swift_int64_t seconds, nanoseconds;
+  _swift_clockSuspending_getTime(&seconds, &nanoseconds);
+#else
   long long seconds, nanoseconds;
   swift_get_time(&seconds, &nanoseconds, swift_clock_id_suspending);
+#endif
   return seconds * static_cast<JobDeadline>(NSEC_PER_SEC) + nanoseconds;
 }
 
@@ -175,19 +182,13 @@ void swift_task_enqueueGlobalWithDelayImpl(SwiftJobDelay delay,
   insertDelayedJob(newJob, deadline);
 }
 
-SWIFT_CC(swift)
-void swift_task_enqueueGlobalWithDeadlineImpl(long long sec,
-                                              long long nsec,
-                                              long long tsec,
-                                              long long tnsec,
-                                              int clock, SwiftJob *newJob) {
+static void enqueueGlobalWithDeadline(long long sec, long long nsec,
+                                      long long nowSec, long long nowNsec,
+                                      SwiftJob *newJob) {
   assert(newJob && "no job provided");
 
   // Compute how far away the caller-supplied deadline is in the caller's
   // clock, then re-anchor it to our internal suspending-clock timebase.
-  long long nowSec, nowNsec;
-  swift_get_time(&nowSec, &nowNsec, static_cast<swift_clock_id>(clock));
-
   long long delta =
       (sec - nowSec) * static_cast<JobDeadline>(NSEC_PER_SEC) +
       (nsec - nowNsec);
@@ -197,6 +198,38 @@ void swift_task_enqueueGlobalWithDeadlineImpl(long long sec,
 
   insertDelayedJob(newJob, deadline);
 }
+
+SWIFT_CC(swift)
+void swift_task_enqueueGlobalWithDeadlineImpl(long long sec,
+                                              long long nsec,
+                                              long long tsec,
+                                              long long tnsec,
+                                              int clock, SwiftJob *newJob) {
+  long long nowSec, nowNsec;
+  // PAL review: this legacy entrypoint still accepts a runtime clock ID.
+  swift_get_time(&nowSec, &nowNsec, static_cast<swift_clock_id>(clock));
+  enqueueGlobalWithDeadline(sec, nsec, nowSec, nowNsec, newJob);
+}
+
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+SWIFT_CC(swift)
+void swift_task_enqueueGlobalWithContinuousDeadlineImpl(
+    long long sec, long long nsec, long long tsec, long long tnsec,
+    SwiftJob *newJob) {
+  __swift_int64_t nowSec, nowNsec;
+  _swift_clockContinuous_getTime(&nowSec, &nowNsec);
+  enqueueGlobalWithDeadline(sec, nsec, nowSec, nowNsec, newJob);
+}
+
+SWIFT_CC(swift)
+void swift_task_enqueueGlobalWithSuspendingDeadlineImpl(
+    long long sec, long long nsec, long long tsec, long long tnsec,
+    SwiftJob *newJob) {
+  __swift_int64_t nowSec, nowNsec;
+  _swift_clockSuspending_getTime(&nowSec, &nowNsec);
+  enqueueGlobalWithDeadline(sec, nsec, nowSec, nowNsec, newJob);
+}
+#endif
 
 /// Recognize jobs in the delayed-jobs queue that are ready to execute
 /// and move them to the primary queue.
@@ -227,8 +260,13 @@ static void sleepThisThreadUntil(JobDeadline deadline) {
   // If the deadline is already in the past there's nothing to wait for.
   if (remaining <= 0)
     return;
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+  _swift_clock_sleep(remaining / static_cast<JobDeadline>(NSEC_PER_SEC),
+                     remaining % static_cast<JobDeadline>(NSEC_PER_SEC));
+#else
   swift_sleep(remaining / static_cast<JobDeadline>(NSEC_PER_SEC),
               remaining % static_cast<JobDeadline>(NSEC_PER_SEC));
+#endif
 }
 
 /// Claim the next job from the cooperative global queue.

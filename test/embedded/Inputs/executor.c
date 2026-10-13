@@ -293,6 +293,22 @@ void swift_task_enqueueGlobalWithDeadlineImpl(long long sec,
   job_schedule(job, clock, deadline);
 }
 
+SWIFT_CC(swift)
+void swift_task_enqueueGlobalWithContinuousDeadlineImpl(
+    long long sec, long long nsec, long long tsec, long long tnsec,
+    SwiftJob *job) {
+  swift_task_enqueueGlobalWithDeadlineImpl(sec, nsec, tsec, tnsec,
+                                         SwiftContinuousClock, job);
+}
+
+SWIFT_CC(swift)
+void swift_task_enqueueGlobalWithSuspendingDeadlineImpl(
+    long long sec, long long nsec, long long tsec, long long tnsec,
+    SwiftJob *job) {
+  swift_task_enqueueGlobalWithDeadlineImpl(sec, nsec, tsec, tnsec,
+                                         SwiftSuspendingClock, job);
+}
+
 /// Enqueue a job on the main executor (which may or may not be the same as
 /// the global executor).
 SWIFT_CC(swift)

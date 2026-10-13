@@ -106,6 +106,18 @@ extension ContinuousClock: Clock {
   }
 
 #if !SWIFT_STDLIB_TASK_TO_THREAD_MODEL_CONCURRENCY
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+  @available(StdlibDeploymentTarget 5.9, *)
+  public func _enqueueJobGlobal(_ job: UnownedJob, until deadline: Instant,
+                                tolerance: Swift.Duration?) {
+    let (seconds, nanoseconds) = durationComponents(for: deadline._value)
+    let (toleranceSeconds, toleranceNanoseconds) =
+      tolerance.map { durationComponents(for: $0) } ?? (0, -1)
+    _enqueueJobGlobalWithContinuousDeadline(
+      seconds, nanoseconds, toleranceSeconds, toleranceNanoseconds, job)
+  }
+#endif
+
   /// Suspend task execution until a given deadline within a tolerance.
   /// If no tolerance is specified then the system may adjust the deadline
   /// to coalesce CPU wake-ups to more efficiently process the wake-ups in

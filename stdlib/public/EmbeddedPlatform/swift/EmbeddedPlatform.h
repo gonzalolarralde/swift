@@ -644,9 +644,16 @@ void _swift_exit(int code) EMBEDDED_SWIFT_NORETURN;
  * Swift's clock APIs call the corresponding platform functions directly.
  * With function-level dead stripping, a program that only reads one clock
  * does not need to implement the other clock or the blocking sleep hook.
- * The C executor interfaces accept runtime clock IDs and therefore reference
- * both clocks. The default cooperative executor also needs the blocking
- * sleep hook to wait for delayed jobs.
+ * Clock-specific scheduling also allows a suspending-only program to omit
+ * the continuous clock definitions. The default cooperative executor needs
+ * the suspending time hook and the blocking sleep hook for its timer queue,
+ * even when the program sleeps using the continuous clock.
+ * The legacy C executor interfaces that accept runtime clock IDs still
+ * reference both clocks if used.
+ *
+ * Task.sleep(for:) and Task.sleep(until:) still default to ContinuousClock.
+ * Platforms without continuous time support must explicitly use
+ * SuspendingClock; the runtime does not substitute a different clock.
  */
 
 /**
@@ -666,8 +673,10 @@ void _swift_exit(int code) EMBEDDED_SWIFT_NORETURN;
  * time: through `ContinuousClock.now`, through the `swift_time_now` C
  * interface that executor implementations use, or through the default
  * cooperative global executor when it re-reads a deadline expressed on this
- * clock. A platform with no continuous time source can implement it as a
- * trap, or use the same time source as the suspending clock.
+ * clock. A platform with no continuous time source can omit this definition
+ * when none of those continuous-clock paths are used. Sharing a time source
+ * with the suspending clock is valid only if it also meets the continuous
+ * clock's semantics, for example on a platform that never suspends.
  *
  * This function can be implemented as a call to `clock_gettime` with
  * `CLOCK_BOOTTIME` on Linux, or `CLOCK_MONOTONIC_RAW` on Darwin.

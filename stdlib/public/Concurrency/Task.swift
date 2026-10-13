@@ -1097,6 +1097,22 @@ func _enqueueJobGlobalWithDeadline(_ seconds: Int64, _ nanoseconds: Int64,
                                    _ toleranceSec: Int64, _ toleranceNSec: Int64,
                                    _ clock: Int32, _ task: UnownedJob)
 
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+@available(StdlibDeploymentTarget 5.7, *)
+@_silgen_name("swift_task_enqueueGlobalWithContinuousDeadline")
+@usableFromInline
+func _enqueueJobGlobalWithContinuousDeadline(
+  _ seconds: Int64, _ nanoseconds: Int64,
+  _ toleranceSec: Int64, _ toleranceNSec: Int64, _ task: UnownedJob)
+
+@available(StdlibDeploymentTarget 5.7, *)
+@_silgen_name("swift_task_enqueueGlobalWithSuspendingDeadline")
+@usableFromInline
+func _enqueueJobGlobalWithSuspendingDeadline(
+  _ seconds: Int64, _ nanoseconds: Int64,
+  _ toleranceSec: Int64, _ toleranceNSec: Int64, _ task: UnownedJob)
+#endif
+
 @available(SwiftStdlib 5.1, *)
 @usableFromInline
 @_silgen_name("swift_task_asyncMainDrainQueue")

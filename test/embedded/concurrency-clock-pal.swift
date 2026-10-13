@@ -149,6 +149,10 @@ struct Main {
     print("slept")
     // CHECK: slept
 
+    try! await Task.sleep(for: .milliseconds(10), clock: .suspending)
+    print("suspending slept")
+    // CHECK: suspending slept
+
     let task = Task { 42 }
     print(await task.value == 42 ? "ran" : "did not run")
     // CHECK: ran

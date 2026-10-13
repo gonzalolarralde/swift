@@ -101,6 +101,44 @@ swift::swift_task_enqueueGlobalWithDeadline(
     swift_task_enqueueGlobalWithDeadlineOrig(sec, nsec, tsec, tnsec, clock, job);
 }
 
+#if SWIFT_USE_EMBEDDED_SWIFT_PLATFORM
+SWIFT_CC(swift) static void
+swift_task_enqueueGlobalWithContinuousDeadlineOrig(
+    long long sec, long long nsec, long long tsec, long long tnsec, Job *job) {
+  swift_task_enqueueGlobalWithContinuousDeadlineImpl(
+      sec, nsec, tsec, tnsec, reinterpret_cast<SwiftJob *>(job));
+}
+
+void swift::swift_task_enqueueGlobalWithContinuousDeadline(
+    long long sec, long long nsec, long long tsec, long long tnsec, Job *job) {
+  if (SWIFT_UNLIKELY(swift_task_enqueueGlobalWithContinuousDeadline_hook))
+    swift_task_enqueueGlobalWithContinuousDeadline_hook(
+        sec, nsec, tsec, tnsec, job,
+        swift_task_enqueueGlobalWithContinuousDeadlineOrig);
+  else
+    swift_task_enqueueGlobalWithContinuousDeadlineOrig(sec, nsec, tsec, tnsec,
+                                                      job);
+}
+
+SWIFT_CC(swift) static void
+swift_task_enqueueGlobalWithSuspendingDeadlineOrig(
+    long long sec, long long nsec, long long tsec, long long tnsec, Job *job) {
+  swift_task_enqueueGlobalWithSuspendingDeadlineImpl(
+      sec, nsec, tsec, tnsec, reinterpret_cast<SwiftJob *>(job));
+}
+
+void swift::swift_task_enqueueGlobalWithSuspendingDeadline(
+    long long sec, long long nsec, long long tsec, long long tnsec, Job *job) {
+  if (SWIFT_UNLIKELY(swift_task_enqueueGlobalWithSuspendingDeadline_hook))
+    swift_task_enqueueGlobalWithSuspendingDeadline_hook(
+        sec, nsec, tsec, tnsec, job,
+        swift_task_enqueueGlobalWithSuspendingDeadlineOrig);
+  else
+    swift_task_enqueueGlobalWithSuspendingDeadlineOrig(sec, nsec, tsec, tnsec,
+                                                      job);
+}
+#endif
+
 SWIFT_CC(swift) static void
 swift_task_checkIsolatedOrig(SerialExecutorRef executor) {
   swift_task_checkIsolatedImpl(*reinterpret_cast<SwiftExecutorRef *>(&executor));
