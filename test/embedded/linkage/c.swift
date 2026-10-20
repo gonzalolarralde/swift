@@ -40,19 +40,19 @@ private func f6() { }
 // @implementation @c / @_cdecl cause symbol emission
 // ---------------------------------------------------------------------------
 
-// CHECK: define {{(linkonce_odr )?(protected |dllexport )?}}double @clib_func1
+// CHECK: define {{(linkonce_odr )?(protected |dllexport )?}}{{(double|i64)}} @clib_func1
 @_cdecl("clib_func1") @implementation
 public func clib_func1() -> Double { 0 }
 
-// CHECK: define {{(linkonce_odr )?(protected |dllexport )?}}double @clib_func2
+// CHECK: define {{(linkonce_odr )?(protected |dllexport )?}}{{(double|i64)}} @clib_func2
 @c @implementation
 package func clib_func2() -> Double { 0 }
 
-// CHECK: define {{(linkonce_odr )?}}hidden double @clib_func3
+// CHECK: define {{(linkonce_odr )?}}hidden {{(double|i64)}} @clib_func3
 @_cdecl("clib_func3") @implementation
 internal func clib_func3() -> Double { 0 }
 
-// CHECK: define {{(linkonce_odr )?}}hidden double @clib_func4
+// CHECK: define {{(linkonce_odr )?}}hidden {{(double|i64)}} @clib_func4
 @c @implementation
 internal func clib_func4() -> Double { 0 }
 

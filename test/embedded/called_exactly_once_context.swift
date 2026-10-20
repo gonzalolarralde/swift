@@ -16,7 +16,7 @@ public func makeCaptureless() -> @called(exactlyOnce) () -> Void {
   return {}
 }
 
-// CHECK: @__swift_exactly_once_closure_context = internal global %swift.refcounted { ptr {{.*}}@metadata{{.*}}, i64 1 }
+// CHECK: @__swift_exactly_once_closure_context = internal global %swift.refcounted { ptr {{.*}}@metadata{{.*}}, i{{32|64}} 1 }
 // CHECK-NOT: @llvm.global_ctors
 // CHECK-NOT: call ptr @swift_initStackObject
 // CHECK-NOT: swift_onceClosureDestroyedError
