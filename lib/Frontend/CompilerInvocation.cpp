@@ -1989,6 +1989,7 @@ static bool ParseLangArgs(LangOptions &Opts, ArgList &Args,
   if (Target.getArch() == llvm::Triple::xtensa &&
       Target.getVendorName() == "esp32s3" &&
       !Opts.hasFeature(Feature::Embedded) &&
+      !FrontendOpts.ParseStdlib && !Args.hasArg(OPT_emit_empty_object_file) &&
       FrontendOptions::doesActionRequireSwiftStandardLibrary(
           FrontendOpts.RequestedAction)) {
     Diags.diagnose(SourceLoc(), diag::target_requires_embedded, Target.str());
