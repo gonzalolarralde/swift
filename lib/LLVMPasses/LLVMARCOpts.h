@@ -113,6 +113,13 @@ inline RT_Kind classifyInstruction(const llvm::Instruction &I) {
   if (F == nullptr)
     return RT_Unknown;
 
+  // Embedded Swift supplies reference-counting implementations in the client
+  // module. Their refcount fields (including inlined uniqueness checks) are
+  // visible to LLVM, so the opaque-runtime NoModRef and ARC-motion assumptions
+  // do not apply. Let ordinary alias analysis inspect their actual effects.
+  if (!F->isDeclaration() && !allowArcOptimizations(F->getName()))
+    return RT_Unknown;
+
   return classifyFunctionName(F->getName());
 }
 
