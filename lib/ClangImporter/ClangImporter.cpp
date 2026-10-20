@@ -1764,6 +1764,18 @@ std::unique_ptr<ClangImporter> ClangImporter::create(
   // FIXME: This has to be cleaned up on the Clang side before we can improve
   // things here.
 
+  // Validate the resolved Clang CPU as well: -Xcc options are processed after
+  // the Swift -target-cpu default and must not silently change this target's ABI.
+  if (ctx.LangOpts.Target.getArch() == llvm::Triple::xtensa &&
+      ctx.LangOpts.Target.getVendorName() == "esp32s3") {
+    const auto &CPU = instance.getInvocation().getTargetOpts().CPU;
+    if (CPU != "esp32s3") {
+      ctx.Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
+                         "CPU for xtensa-esp32s3-none-elf", CPU);
+      return nullptr;
+    }
+  }
+
   // Create the target instance.
   instance.setTarget(clang::TargetInfo::CreateTargetInfo(
       clangDiags, instance.getInvocation().getTargetOpts()));

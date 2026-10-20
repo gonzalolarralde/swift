@@ -120,6 +120,7 @@ static const SupportedConditionalValue SupportedConditionalCompilationArches[] =
   "wasm32",
   "riscv32",
   "riscv64",
+  "xtensa",
   "avr"
 };
 
@@ -663,6 +664,9 @@ std::pair<bool, bool> LangOptions::setTarget(llvm::Triple triple) {
     break;
   case llvm::Triple::ArchType::avr:
     addPlatformConditionValue(PlatformConditionKind::Arch, "avr");
+    break;
+  case llvm::Triple::ArchType::xtensa:
+    addPlatformConditionValue(PlatformConditionKind::Arch, "xtensa");
     break;
   default:
     UnsupportedArch = true;

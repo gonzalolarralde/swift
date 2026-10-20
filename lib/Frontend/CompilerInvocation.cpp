@@ -1986,6 +1986,15 @@ static bool ParseLangArgs(LangOptions &Opts, ArgList &Args,
   }
   Opts.BypassResilienceChecks |= Args.hasArg(OPT_bypass_resilience);
 
+  if (Target.getArch() == llvm::Triple::xtensa &&
+      Target.getVendorName() == "esp32s3" &&
+      !Opts.hasFeature(Feature::Embedded) &&
+      FrontendOptions::doesActionRequireSwiftStandardLibrary(
+          FrontendOpts.RequestedAction)) {
+    Diags.diagnose(SourceLoc(), diag::target_requires_embedded, Target.str());
+    HadError = true;
+  }
+
   if (Opts.hasFeature(Feature::Embedded)) {
     if (!swiftModulesInitialized()) {
       Diags.diagnose(SourceLoc(), diag::no_swift_sources_with_embedded);
@@ -2338,6 +2347,16 @@ static bool ParseClangImporterArgs(ClangImporterOptions &Opts, ArgList &Args,
 
   if (const Arg *A = Args.getLastArg(OPT_target_cpu))
     Opts.TargetCPU = A->getValue();
+
+  if (LangOpts.Target.getArch() == llvm::Triple::xtensa &&
+      LangOpts.Target.getVendorName() == "esp32s3") {
+    if (!Opts.TargetCPU.empty() && Opts.TargetCPU != "esp32s3") {
+      Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
+                     "-target-cpu for xtensa-esp32s3-none-elf", Opts.TargetCPU);
+      return true;
+    }
+    Opts.TargetCPU = "esp32s3";
+  }
 
   if (const Arg *A = Args.getLastArg(OPT_index_store_path))
     Opts.IndexStorePath = A->getValue();
@@ -3917,7 +3936,11 @@ static bool ParseIRGenArgs(IRGenOptions &Opts, ArgList &Args,
   if (Args.hasArg(OPT_trap_function))
     Opts.TrapFuncName = Args.getLastArgValue(OPT_trap_function).str();
 
-  Opts.FunctionSections = Args.hasArg(OPT_function_sections);
+  // Xtensa literal loads have limited reach. Separate function sections let the
+  // linker place each function's literal pool nearby, including when Embedded
+  // specialization makes the complete translation unit larger than 256 KiB.
+  Opts.FunctionSections = Args.hasArg(OPT_function_sections) ||
+                          Triple.getArch() == llvm::Triple::xtensa;
 
   Opts.VerboseAsm = Args.hasFlag(OPT_verbose_asm, OPT_no_verbose_asm,
                                  /*default*/ true);

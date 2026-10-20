@@ -39,6 +39,9 @@ ERROR(error_unsupported_target_os, none,
 ERROR(error_unsupported_target_arch, none,
       "unsupported target architecture: '%0'", (StringRef))
 
+ERROR(target_requires_embedded, none,
+      "target '%0' requires '-enable-experimental-feature Embedded'", (StringRef))
+
 WARNING(warning_upcoming_feature_on_by_default, none,
         "upcoming feature '%0' already enabled as of the Swift %1 "
         "language mode",
