@@ -1,4 +1,4 @@
-// RUN: %target-typecheck-verify-swift -Wwarning EmbeddedRestrictions -verify-additional-prefix nonembedded-
+// RUN: %if !embedded_only %{ %target-typecheck-verify-swift -Wwarning EmbeddedRestrictions -verify-additional-prefix nonembedded- %}
 // RUN: %target-typecheck-verify-swift -enable-experimental-feature Embedded -verify-additional-prefix embedded-
 // RUN: %target-swift-frontend -typecheck %s -suppress-warnings -enable-experimental-feature Embedded -DSUPPRESS_CASTS
 // REQUIRES: swift_feature_Embedded
