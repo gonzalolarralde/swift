@@ -1385,6 +1385,18 @@ function(add_swift_target_library_single target name)
               ${SWIFTLIB_SINGLE_SOURCES}
               ${SWIFTLIB_SINGLE_EXTERNAL_SOURCES}
               ${INCORPORATED_OBJECT_LIBRARIES_EXPRESSIONS})
+  # Swift objects are produced by custom commands. TARGET_OBJECTS only includes
+  # objects compiled by CMake, so retain these inputs when rebuilding an archive
+  # with the target's archiver on a Darwin host.
+  set(swift_external_archive_objects)
+  foreach(source IN LISTS SWIFTLIB_SINGLE_SOURCES SWIFTLIB_SINGLE_EXTERNAL_SOURCES)
+    get_source_file_property(is_external_object "${source}" EXTERNAL_OBJECT)
+    if(is_external_object)
+      list(APPEND swift_external_archive_objects "${source}")
+    endif()
+  endforeach()
+  set_property(TARGET "${target}" PROPERTY
+    SWIFT_EXTERNAL_ARCHIVE_OBJECTS "${swift_external_archive_objects}")
   if (NOT SWIFTLIB_SINGLE_OBJECT_LIBRARY AND TARGET "${install_in_component}")
     add_dependencies("${install_in_component}" "${target}")
   endif()
@@ -4073,15 +4085,22 @@ function(embedded_amend_archive_commands_on_darwin_host target triple)
   # properly in the toolchain file.
   if(SWIFT_HOST_VARIANT STREQUAL "macosx" AND SWIFT_EMBEDDED_STDLIB_ARCHIVER_FOR_NON_DARWIN_PLATFORMS_UNDER_MACOS)
     if(triple MATCHES "-elf$" OR triple MATCHES "-eabi$" OR triple MATCHES "-wasm$")
+      get_target_property(already_amended ${target} SWIFT_EMBEDDED_ARCHIVE_AMENDED)
+      if(already_amended)
+        return()
+      endif()
+      set_property(TARGET ${target} PROPERTY SWIFT_EMBEDDED_ARCHIVE_AMENDED TRUE)
       # There is no way to change the archive commands only for a few targets, so
       # we resort going double work (and assume the previous commands exit successfully)
       add_custom_command(TARGET ${target}
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E rm $<TARGET_FILE:${target}>
         COMMAND ${SWIFT_EMBEDDED_STDLIB_ARCHIVER_FOR_NON_DARWIN_PLATFORMS_UNDER_MACOS}
+          --format=gnu
           $<TARGET_FILE:${target}>
           "$<JOIN:$<TARGET_PROPERTY:${target},STATIC_LIBRARY_OPTIONS>,;>"
           "$<JOIN:$<TARGET_OBJECTS:${target}>,;>"
+          "$<JOIN:$<TARGET_PROPERTY:${target},SWIFT_EXTERNAL_ARCHIVE_OBJECTS>,;>"
         COMMAND ${CMAKE_COMMAND} -E touch $<TARGET_FILE:${target}>
         VERBATIM
         COMMAND_EXPAND_LISTS)
