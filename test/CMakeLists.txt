@@ -14,6 +14,15 @@ function(swift_configure_lit_site_cfg source_path destination_path installed_nam
 
   set(LIT_SWIFTLIB_DIR ${SWIFTLIB_DIR})
 
+  get_property(embedded_concurrency_targets GLOBAL PROPERTY
+    SWIFT_EMBEDDED_CONCURRENCY_TARGET_TRIPLES)
+  set(SWIFT_EMBEDDED_CONCURRENCY_MODULE_TRIPLES)
+  foreach(entry IN LISTS embedded_concurrency_targets)
+    string(REGEX REPLACE "[ \t]+" ";" fields "${entry}")
+    list(GET fields 1 module_triple)
+    list(APPEND SWIFT_EMBEDDED_CONCURRENCY_MODULE_TRIPLES "${module_triple}")
+  endforeach()
+
   configure_file("${source_path}" "${destination_path}" @ONLY)
 
   if(NOT "${installed_name}" STREQUAL "")

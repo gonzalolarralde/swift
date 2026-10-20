@@ -1,6 +1,7 @@
 // RUN: %llvm-nm -a %swift_obj_root/lib/swift/embedded/%module-target-triple/libswift_Concurrency.a | %FileCheck %s
 
 // REQUIRES: swift_feature_Embedded
+// REQUIRES: embedded_concurrency
 // REQUIRES: optimized_stdlib
 // REQUIRES: embedded_stdlib_default_codegen
 

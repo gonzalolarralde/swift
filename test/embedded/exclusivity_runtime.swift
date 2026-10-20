@@ -28,6 +28,7 @@
 // REQUIRES: executable_test
 // REQUIRES: optimized_stdlib
 // REQUIRES: swift_feature_Embedded
+// REQUIRES: embedded_concurrency
 // REQUIRES: swift_feature_EmbeddedDynamicExclusivity
 // REQUIRES: embedded_stdlib_default_codegen
 

@@ -6,6 +6,7 @@
 // REQUIRES: executable_test
 // REQUIRES: optimized_stdlib
 // REQUIRES: swift_feature_Embedded
+// REQUIRES: embedded_concurrency
 
 public func compare (
   _ t0: (any (~Copyable & ~Escapable).Type)?,
