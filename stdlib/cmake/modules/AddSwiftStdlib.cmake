@@ -3983,6 +3983,13 @@ function(add_embedded_swift_target_library prefix library_name)
       endif()
     endif()
 
+    set(per_target_c_compile_flags ${EMBLIB_C_COMPILE_FLAGS})
+    if("${arch}" STREQUAL "xtensa")
+      # Xtensa has no PIC relocation model. These are static bare-metal
+      # archives, even when the host build globally enables PIC.
+      list(APPEND per_target_c_compile_flags -fno-pic)
+    endif()
+
     add_swift_target_library_single(
       ${prefix}-${mod}
       ${library_name}
@@ -3996,7 +4003,7 @@ function(add_embedded_swift_target_library prefix library_name)
       ${EMBLIB_UNPARSED_ARGUMENTS}
       GYB_SOURCES ${EMBLIB_GYB_SOURCES}
       SWIFT_COMPILE_FLAGS ${per_target_swift_compile_flags}
-      C_COMPILE_FLAGS ${EMBLIB_C_COMPILE_FLAGS}
+      C_COMPILE_FLAGS ${per_target_c_compile_flags}
       SDK "embedded"
       ARCHITECTURE "${arch_key}"
       FILE_DEPENDS ${EMBLIB_FILE_DEPENDS}

@@ -291,6 +291,11 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB_CROSS_COMPILING)
         "riscv64  riscv64-none-none-eabi    riscv64-none-none-eabi"
       )
     endif()
+    if("Xtensa" IN_LIST LLVM_TARGETS_TO_BUILD)
+      list(APPEND EMBEDDED_STDLIB_TARGET_TRIPLES
+        "xtensa  xtensa-esp32s3-none-elf    xtensa-esp32s3-none-elf"
+      )
+    endif()
     if("X86" IN_LIST LLVM_TARGETS_TO_BUILD)
       list(APPEND EMBEDDED_STDLIB_TARGET_TRIPLES
         "i686    i686-unknown-none-elf       i686-unknown-none-elf"
