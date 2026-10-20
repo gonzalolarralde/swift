@@ -38,8 +38,12 @@ case failed
 case didNotTry
 }
 
+// Bare-metal execution support supplies this libc function. Defining another
+// copy here conflicts with libc implementations that link it from an archive.
+#if !os(none)
 @c
 func arc4random_buf(_ buf: UnsafeMutableRawPointer, _ nbytes: Int) { }
+#endif
 
 @inline(never)
 func doTryCastFromAny<T>(_ value: Any, to: T.Type) -> T? {
