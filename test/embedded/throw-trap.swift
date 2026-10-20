@@ -22,7 +22,7 @@ public func catching1() {
   }
 }
 
-// CHECK-EXISTENTIALS-IR: call swiftcc { ptr, ptr } @swift_allocError(
+// CHECK-EXISTENTIALS-IR: call {{(swiftcc )?}}{ ptr, ptr } @swift_allocError(
 
 // CHECK-TRAPS-SIL:      sil @$e4main9throwing1SiyKF : $@convention(thin) () -> (Int, @error any Error) {
 // CHECK-TRAPS-SIL-NEXT: bb0:

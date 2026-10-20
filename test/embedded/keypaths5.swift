@@ -45,17 +45,17 @@ public func updateKeyPaths(ms: MyStruct) {
   updateValueIn(&ms, keyPath: \.x) { $0 += 1 }
 }
 
-// CHECK-IR-LABEL: define linkonce_odr hidden swiftcc i32 @"$e9keypaths510getValueIn_7keyPathq_x_s03KeyF0Cyxq_Gtr0_lFAA8MyStructV_s5Int32VTg5"
+// CHECK-IR-LABEL: define linkonce_odr hidden {{(swiftcc )?}}i32 @"$e9keypaths510getValueIn_7keyPathq_x_s03KeyF0Cyxq_Gtr0_lFAA8MyStructV_s5Int32VTg5"
 // CHECK-IR-NOT: ret void
-// CHECK-IR: call swiftcc i32 @"$e18swift_getAtKeyPath9keypaths58MyStructV_s5Int32VTg5"
+// CHECK-IR: call {{(swiftcc )?}}i32 @"$e18swift_getAtKeyPath9keypaths58MyStructV_s5Int32VTg5"
 
-// CHECK-IR-LABEL: define linkonce_odr hidden swiftcc void @"$e9keypaths515getValueAsAnyIn_7keyPathypx_s010PartialKeyH0CyxGtlFAA8MyStructV_Tg5"
+// CHECK-IR-LABEL: define linkonce_odr hidden {{(swiftcc )?}}void @"$e9keypaths515getValueAsAnyIn_7keyPathypx_s010PartialKeyH0CyxGtlFAA8MyStructV_Tg5"
 // CHECK-IR-NOT: ret void
-// CHECK-IR: call swiftcc void @"$e25swift_getAtPartialKeyPath9keypaths58MyStructV_Tg5"
+// CHECK-IR: call {{(swiftcc )?}}void @"$e25swift_getAtPartialKeyPath9keypaths58MyStructV_Tg5"
 
-// CHECK-IR-LABEL: define linkonce_odr hidden swiftcc void @"$e9keypaths515getValueAsAnyIn7anyRoot7keyPathypSgx_s0e3KeyJ0CtlFAA8MyStructV_Tg5"
+// CHECK-IR-LABEL: define linkonce_odr hidden {{(swiftcc )?}}void @"$e9keypaths515getValueAsAnyIn7anyRoot7keyPathypSgx_s0e3KeyJ0CtlFAA8MyStructV_Tg5"
 // CHECK-IR-NOT: ret void
-// CHECK-IR: call swiftcc void @"$e21swift_getAtAnyKeyPath9keypaths58MyStructV_Tg5"
+// CHECK-IR: call {{(swiftcc )?}}void @"$e21swift_getAtAnyKeyPath9keypaths58MyStructV_Tg5"
 
 // CHECK-SIL-LABEL: sil shared [noinline] @$e9keypaths513updateValueIn_7keyPath4bodyyxz_s011WritableKeyF0Cyxq_Gyq_zXEtr0_lFAA8MyStructV_s5Int32VTg5 : $@convention(thin) (@inout MyStruct, @guaranteed WritableKeyPath<MyStruct, Int32>, @guaranteed @noescape @callee_guaranteed @substituted <τ_0_0> (@inout τ_0_0) -> () for <Int32>) -> () {
 // CHECK-SIL-NOT: return

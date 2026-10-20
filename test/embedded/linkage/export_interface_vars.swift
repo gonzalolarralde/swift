@@ -30,7 +30,7 @@
 // A stored `var` with `@export(interface)` produces a strongly-defined storage
 // global and a strongly-defined unsafe-address accessor.
 // LIBRARY-IR-DAG: @"$e7Library15exportedStoredVSivp" = {{(protected )?}}global
-// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library15exportedStoredVSivau"()
+// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library15exportedStoredVSivau"()
 // LIBRARY-SIL-DAG: sil_global [export_interface] @$e7Library15exportedStoredVSivp
 // `@export(interface)` does not need to be serialized: it's a strong public
 // definition emitted into the library's object file, and the swiftmodule does
@@ -42,7 +42,7 @@ public var exportedStoredV: Int = 42
 // A stored `let` with `@export(interface)` produces a strongly-defined storage
 // constant and a strongly-defined unsafe-address accessor.
 // LIBRARY-IR-DAG: @"$e7Library15exportedStoredLSivp" = {{(protected )?}}constant
-// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library15exportedStoredLSivau"()
+// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library15exportedStoredLSivau"()
 // LIBRARY-SIL-DAG: sil_global {{.*}}[export_interface] {{.*}}@$e7Library15exportedStoredLSivp
 // LIBRARY-SERIALIZED-NOT: sil_global {{.*}}@$e6LibSer15exportedStoredLSivp
 @export(interface)
@@ -50,14 +50,14 @@ public let exportedStoredL: Int = 7
 
 // A computed read-only property with `@export(interface)` produces a
 // strongly-defined getter (which inherits the model from the var).
-// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}swiftcc i64 @"$e7Library18exportedComputedROSivg"()
+// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}{{(swiftcc )?}}i64 @"$e7Library18exportedComputedROSivg"()
 @export(interface)
 public var exportedComputedRO: Int { return 100 }
 
 // A computed read-write property with `@export(interface)` produces strongly
 // defined getter and setter (both inherit the model from the var).
-// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}swiftcc i64 @"$e7Library18exportedComputedRWSivg"()
-// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}swiftcc void @"$e7Library18exportedComputedRWSivs"
+// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}{{(swiftcc )?}}i64 @"$e7Library18exportedComputedRWSivg"()
+// LIBRARY-IR-DAG: define {{(protected |dllexport )?}}{{(swiftcc )?}}void @"$e7Library18exportedComputedRWSivs"
 @export(interface)
 public var exportedComputedRW: Int {
   get { return 200 }
@@ -83,8 +83,8 @@ public struct Container {
   public var storage: Int = 0
   public init() {}
 
-  // LIBRARY-IR-DAG: define {{(protected |dllexport )?}}swiftcc i64 @"$e7Library9ContainerVyS2icig"
-  // LIBRARY-IR-DAG: define {{(protected |dllexport )?}}swiftcc void @"$e7Library9ContainerVyS2icis"
+  // LIBRARY-IR-DAG: define {{(protected |dllexport )?}}{{(swiftcc )?}}i64 @"$e7Library9ContainerVyS2icig"
+  // LIBRARY-IR-DAG: define {{(protected |dllexport )?}}{{(swiftcc )?}}void @"$e7Library9ContainerVyS2icis"
   @export(interface)
   public subscript(idx: Int) -> Int {
     get { return storage + idx }
@@ -97,20 +97,20 @@ import Library
 
 // The client must reference the @export(interface) accessors externally
 // rather than re-emit `linkonce_odr` copies.
-// CLIENT-IR-DAG: declare swiftcc ptr @"$e7Library15exportedStoredVSivau"()
-// CLIENT-IR-DAG: declare swiftcc ptr @"$e7Library15exportedStoredLSivau"()
-// CLIENT-IR-DAG: declare swiftcc i64 @"$e7Library18exportedComputedROSivg"()
-// CLIENT-IR-DAG: declare swiftcc i64 @"$e7Library18exportedComputedRWSivg"()
-// CLIENT-IR-DAG: declare swiftcc void @"$e7Library18exportedComputedRWSivs"
-// CLIENT-IR-DAG: declare swiftcc i64 @"$e7Library9ContainerVyS2icig"
+// CLIENT-IR-DAG: declare {{(swiftcc )?}}ptr @"$e7Library15exportedStoredVSivau"()
+// CLIENT-IR-DAG: declare {{(swiftcc )?}}ptr @"$e7Library15exportedStoredLSivau"()
+// CLIENT-IR-DAG: declare {{(swiftcc )?}}i64 @"$e7Library18exportedComputedROSivg"()
+// CLIENT-IR-DAG: declare {{(swiftcc )?}}i64 @"$e7Library18exportedComputedRWSivg"()
+// CLIENT-IR-DAG: declare {{(swiftcc )?}}void @"$e7Library18exportedComputedRWSivs"
+// CLIENT-IR-DAG: declare {{(swiftcc )?}}i64 @"$e7Library9ContainerVyS2icig"
 
 // For @export(implementation), the client emits its own linkonce_odr copy of
 // the storage and accessors. (On ELF the storage takes `protected`
 // visibility; the accessor functions stay `hidden` because they aren't
 // exported by the client.)
 // CLIENT-IR-DAG: @"$e7Library11implStoredVSivp" = linkonce_odr {{(protected )?}}global
-// CLIENT-IR-DAG: define linkonce_odr hidden swiftcc ptr @"$e7Library11implStoredVSivau"()
-// CLIENT-IR-DAG: define linkonce_odr hidden swiftcc i64 @"$e7Library12implComputedSivg"()
+// CLIENT-IR-DAG: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e7Library11implStoredVSivau"()
+// CLIENT-IR-DAG: define linkonce_odr hidden {{(swiftcc )?}}i64 @"$e7Library12implComputedSivg"()
 
 // The client's IR must NOT redefine the @export(interface) storage or
 // accessors.

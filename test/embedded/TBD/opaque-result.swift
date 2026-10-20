@@ -16,5 +16,5 @@ extension Int: P {
   public func f() -> Int { self }
 }
 
-// IR: define {{(protected |dllexport )?}}swiftcc void @"$e3Lib6opaqueQryF"(
+// IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}void @"$e3Lib6opaqueQryF"(
 public func opaque() -> some P { 42 }

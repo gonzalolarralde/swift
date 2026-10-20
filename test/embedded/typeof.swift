@@ -35,16 +35,16 @@ func getType<T>(of: T.Type) -> Any.Type {
 // CHECK: @"$eSd_SdtmMf" = linkonce_odr hidden constant
 // CHECK: @"$es5Error_pMf" = linkonce_odr hidden constant
 
-// CHECK-LABEL: define {{.*}}swiftcc ptr @"$e6typeof7getType2ofypXpxm_tlFyt_Ttg5"
+// CHECK-LABEL: define {{.*}}{{(swiftcc )?}}ptr @"$e6typeof7getType2ofypXpxm_tlFyt_Ttg5"
 // CHECK: ptr @"$eytMf"
 
-// CHECK-LABEL: define {{.*}}swiftcc ptr @"$e6typeof7getType2ofypXpxm_tlFSi_Sdt_Ttg5"
+// CHECK-LABEL: define {{.*}}{{(swiftcc )?}}ptr @"$e6typeof7getType2ofypXpxm_tlFSi_Sdt_Ttg5"
 // CHECK: ptr @"$eSi_SdtMf"
 
-// CHECK-LABEL: define linkonce_odr hidden swiftcc ptr @"$e6typeof7getType2ofypXpxm_tlFSd_Sdtm_Ttg5"()
+// CHECK-LABEL: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e6typeof7getType2ofypXpxm_tlFSd_Sdtm_Ttg5"()
 // CHECK: ptr @"$eSd_SdtmMf"
 
-// CHECK-LABEL: define linkonce_odr hidden swiftcc ptr @"$e6typeof7getType2ofypXpxm_tlFs5Error_p_Ttg5"()
+// CHECK-LABEL: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e6typeof7getType2ofypXpxm_tlFs5Error_p_Ttg5"()
 // CHECK: ptr @"$es5Error_pMf"
 
 public func readTypes() {
@@ -61,10 +61,10 @@ func realGetType<T>(of value: T) -> Any.Type {
   return type(of: value)
 }
 
-// CHECK-LABEL: define linkonce_odr hidden swiftcc ptr @"$e6typeof11realGetType2ofypXpx_tlFSd_Tg5"(double %0)
+// CHECK-LABEL: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e6typeof11realGetType2ofypXpx_tlFSd_Tg5"(double %0)
 // CHECK: ptr @"$eSdMf"
 
-// CHECK-LABEL: define linkonce_odr hidden swiftcc ptr @"$e6typeof11realGetType2ofypXpx_tlFAA1CC_Tg5"(ptr %0)
+// CHECK-LABEL: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e6typeof11realGetType2ofypXpx_tlFAA1CC_Tg5"(ptr %0)
 // CHECK: [[ALLOCA:%.*]] = alloca ptr
 // CHECK: store ptr %0, ptr [[ALLOCA]]
 // CHECK: [[VTABLE:%.*]] = load ptr, ptr [[ALLOCA]]

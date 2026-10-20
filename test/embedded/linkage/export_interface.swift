@@ -19,23 +19,23 @@
 
 //--- Library.swift
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library5helloSaySiGyF"()
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library5helloSaySiGyF"()
 @export(interface)
 public func hello() -> [Int] {
   getArray()
 }
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library8getArraySaySiGyF"()
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library8getArraySaySiGyF"()
 public func getArray() -> [Int] {
   throughInternal()
 }
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library15throughInternalSaySiGyF"()
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library15throughInternalSaySiGyF"()
 func throughInternal() -> [Int] {
   throughPrivate()
 }
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library14throughPrivate
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library14throughPrivate
 private func throughPrivate() -> [Int] {
   [5, 6, 7]
 }
@@ -43,7 +43,7 @@ private func throughPrivate() -> [Int] {
 // LIBRARY-IR-NOT: unnecessary
 public func unnecessary() -> Int { 5 }
 
-// LIBRARY-IR: define linkonce_odr hidden swiftcc { ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
+// LIBRARY-IR: define linkonce_odr hidden {{(swiftcc )?}}{ ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
 
 // LIBRARY-SIL: sil [export_interface] @$e7Library5helloSaySiGyF
 // LIBRARY-SIL: sil @$e7Library8getArraySaySiGyF : $@convention(thin) () -> @owned Array<Int> {
@@ -61,13 +61,13 @@ public func testMe() {
 // here.
 
 // APPLICATION-SIL: sil [export_interface] @$e7Library5helloSaySiGyF : $@convention(thin) () -> @owned Array<Int>{{$}}
-// APPLICATION-IR: declare swiftcc ptr @"$e7Library5helloSaySiGyF"()
+// APPLICATION-IR: declare {{(swiftcc )?}}ptr @"$e7Library5helloSaySiGyF"()
 
 // Note: "getArray" is not prohibited from being emitted into the client, so
 // its definition is available.
 
 // APPLICATION-SIL: sil public_external @$e7Library8getArraySaySiGyF : $@convention(thin) () -> @owned Array<Int> {
-// APPLICATION-IR: define linkonce_odr hidden swiftcc ptr @"$e7Library8getArraySaySiGyF"()
+// APPLICATION-IR: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e7Library8getArraySaySiGyF"()
 
 // APPLICATION-IR: define{{.*}}@Application_main
 @main
@@ -76,5 +76,5 @@ struct Main {
   }
 }
 
-// APPLICATION-IR: define linkonce_odr hidden swiftcc { ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
+// APPLICATION-IR: define linkonce_odr hidden {{(swiftcc )?}}{ ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
 

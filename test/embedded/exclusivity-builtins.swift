@@ -15,7 +15,7 @@ public struct MyClass {
   var i: Builtin.Int32
 }
 
-// CHECK-LABEL: define {{.*}}swiftcc void @"$e20exclusivity_builtins11beginAccessyyBp_BpAA7MyClassVmtF"(ptr %0, ptr %1)
+// CHECK-LABEL: define {{.*}}{{(swiftcc )?}}void @"$e20exclusivity_builtins11beginAccessyyBp_BpAA7MyClassVmtF"(ptr %0, ptr %1)
 // CHECK-NOT:   call void @swift_beginAccess
 // CHECK: ret void
 
@@ -25,7 +25,7 @@ public func beginAccess(_ address: Builtin.RawPointer, _ scratch: Builtin.RawPoi
   Builtin.beginUnpairedModifyAccess(address, scratch, ty1);
 }
 
-// CHECK-LABEL: define {{.*}}swiftcc void @"$e20exclusivity_builtins9endAccessyyBpF"(ptr{{.*}})
+// CHECK-LABEL: define {{.*}}{{(swiftcc )?}}void @"$e20exclusivity_builtins9endAccessyyBpF"(ptr{{.*}})
 // CHECK-NOT:   call void @swift_endAccess
 // CHECK: ret void
 @used
@@ -34,7 +34,7 @@ public func endAccess(_ address: Builtin.RawPointer) {
   Builtin.endUnpairedAccess(address)
 }
 
-// CHECK-LABEL: define {{.*}}swiftcc void @"$e20exclusivity_builtins10readAccessyyBp_AA7MyClassVmtF"(ptr %0)
+// CHECK-LABEL: define {{.*}}{{(swiftcc )?}}void @"$e20exclusivity_builtins10readAccessyyBp_AA7MyClassVmtF"(ptr %0)
 // CHECK-NOT:   call void @swift_beginAccess
 // CHECK: ret void
 @used

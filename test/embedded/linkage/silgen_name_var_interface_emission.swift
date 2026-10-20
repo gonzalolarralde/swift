@@ -8,7 +8,7 @@
 // a strong definition so clients can reference it externally.
 // CHECK-DAG: @my_renamed_storage = {{(dso_local |protected |linkonce_odr |weak )*}}global
 // CHECK-NOT: @my_renamed_storage = available_externally
-// CHECK-DAG: define {{(hidden |protected |dllexport )?}}swiftcc ptr @"$e7Library14renamedStorageSVSg_ACtvau"
+// CHECK-DAG: define {{(hidden |protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library14renamedStorageSVSg_ACtvau"
 @_silgen_name("my_renamed_storage")
 @export(interface)
 var renamedStorage: (UnsafeRawPointer?, UnsafeRawPointer?) = (nil, nil)

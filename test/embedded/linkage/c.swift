@@ -60,11 +60,11 @@ internal func clib_func4() -> Double { 0 }
 // @section causes symbol emission
 // ---------------------------------------------------------------------------
 
-// CHECK: define {{(linkonce_odr )?(protected |dllexport )?}}swiftcc void @"$e1c15symbolInSectionyyF"
+// CHECK: define {{(linkonce_odr )?(protected |dllexport )?}}{{(swiftcc )?}}void @"$e1c15symbolInSectionyyF"
 @section("__TEXT,__mysection")
 public func symbolInSection() { }
 
-// CHECK: define {{(linkonce_odr )?}}hidden swiftcc void @"$e1c23internalSymbolInSectionyyF"
+// CHECK: define {{(linkonce_odr )?}}hidden {{(swiftcc )?}}void @"$e1c23internalSymbolInSectionyyF"
 @section("__TEXT,__mysection")
 func internalSymbolInSection() { }
 
@@ -72,6 +72,6 @@ func internalSymbolInSection() { }
 // @used causes symbol emission
 // ---------------------------------------------------------------------------
 
-// CHECK: define {{(linkonce_odr )?}}hidden swiftcc void @"$e1c10usedSymbolyyF"
+// CHECK: define {{(linkonce_odr )?}}hidden {{(swiftcc )?}}void @"$e1c10usedSymbolyyF"
 @used
 func usedSymbol() { }

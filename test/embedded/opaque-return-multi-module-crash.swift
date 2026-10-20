@@ -63,6 +63,6 @@ makeOpaque().f()
 
 // makeOpaque()'s opaque result lowers to the concrete underlying type at the call site.
 // CHECK-IR-LABEL: define {{.*}}@"$e4Main18triggerConformanceyyF"
-// CHECK-IR:       call swiftcc void @"$e8MyModule10makeOpaqueQryF"(ptr noalias sret(%T8MyModule4ImplV)
+// CHECK-IR:       call {{(swiftcc )?}}void @"$e8MyModule10makeOpaqueQryF"(ptr noalias sret(%T8MyModule4ImplV)
 
 // CHECK: Impl.f

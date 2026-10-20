@@ -19,29 +19,29 @@
 
 //--- Library.swift
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library5helloSaySiGyF"()
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library5helloSaySiGyF"()
 public func hello() -> [Int] {
   getArray()
 }
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library8getArraySaySiGyF"()
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library8getArraySaySiGyF"()
 public func getArray() -> [Int] {
   throughInternal()
 }
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library15throughInternalSaySiGyF"()
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library15throughInternalSaySiGyF"()
 func throughInternal() -> [Int] {
   throughPrivate()
 }
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc ptr @"$e7Library14throughPrivate33_
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}ptr @"$e7Library14throughPrivate33_
 private func throughPrivate() -> [Int] {
   [5, 6, 7]
 }
 
-// LIBRARY-IR: define linkonce_odr hidden swiftcc { ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
+// LIBRARY-IR: define linkonce_odr hidden {{(swiftcc )?}}{ ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
 
-// LIBRARY-IR: define {{(protected |dllexport )?}}swiftcc i64 @"$e7Library11unnecessarys5Int64VyF"()
+// LIBRARY-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}i64 @"$e7Library11unnecessarys5Int64VyF"()
 public func unnecessary() -> Int64 { 5 }
 
 // LIBRARY-SIL: sil @$e7Library5helloSaySiGyF
@@ -55,13 +55,13 @@ public func testMe() {
   _ = getArray()
 }
 
-// APPLICATION-IR: define {{(protected |dllexport )?}}swiftcc void @"$e11Application6testMeyyF"()
+// APPLICATION-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}void @"$e11Application6testMeyyF"()
 
 // APPLICATION-SIL: sil public_external @$e7Library5helloSaySiGyF : $@convention(thin) () -> @owned Array<Int> {
-// APPLICATION-IR: define linkonce_odr hidden swiftcc ptr @"$e7Library5helloSaySiGyF"()
+// APPLICATION-IR: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e7Library5helloSaySiGyF"()
 
 // APPLICATION-SIL: sil public_external @$e7Library8getArraySaySiGyF : $@convention(thin) () -> @owned Array<Int> {
-// APPLICATION-IR: define linkonce_odr hidden swiftcc ptr @"$e7Library8getArraySaySiGyF"()
+// APPLICATION-IR: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e7Library8getArraySaySiGyF"()
 
 // APPLICATION-IR: define {{(protected |dllexport )?}}i32 @Application_main
 @main

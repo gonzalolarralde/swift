@@ -26,7 +26,7 @@ struct Point {
 }
 
 // Only the specialization, and it's linkonce_odr.
-// ROOT-IR-DAG: define linkonce_odr hidden swiftcc ptr @"$e4Root20enumerateByteOffsetsySaySiGxmlFAA5PointV_Ttg5"()
+// ROOT-IR-DAG: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e4Root20enumerateByteOffsetsySaySiGxmlFAA5PointV_Ttg5"()
 public func enumerateByteOffsets<T>(_: T.Type) -> [Int] {
   var array: [Int] = []
   for i in 0..<MemoryLayout<T>.size {
@@ -36,7 +36,7 @@ public func enumerateByteOffsets<T>(_: T.Type) -> [Int] {
 }
 
 // Strong definition.
-// ROOT-IR-DAG: define {{(protected )?}}swiftcc ptr @"$e4Root15getPointOffsetsSaySiGyF"(
+// ROOT-IR-DAG: define {{(protected )?}}{{(swiftcc )?}}ptr @"$e4Root15getPointOffsetsSaySiGyF"(
 // ROOT-SIL: getPointOffsets
 // ROOT-SIL-NOT: sil{{.*}}@$e4Root15getPointOffsetsSaySiGyF : $@convention(thin) () -> @owned Array<Int> {
 #if EXPLICIT_EXPORT
@@ -159,7 +159,7 @@ public func makeIntClass() -> any Greeter { MyGenericClass(7) }
 
 // Default-argument generators are synthesized helpers are always
 // `[export_implementation]`.
-// ROOT-IR-DAG: define {{(linkonce_odr hidden |hidden |protected )?}}swiftcc {{.*}} @"$e4Root15funcWithDefault_3msgySi_s12StaticStringVtFfA0_"
+// ROOT-IR-DAG: define {{(linkonce_odr hidden |hidden |protected )?}}{{(swiftcc )?}}{{.*}} @"$e4Root15funcWithDefault_3msgySi_s12StaticStringVtFfA0_"
 // ROOT-IR-NOT: @"$e4Root15funcWithDefault_3msgySi_s12StaticStringVtFfA0_"{{[^"]*}} = available_externally
 #if EXPLICIT_EXPORT
 @export(interface)
@@ -234,7 +234,7 @@ public func useGreeters() {
 // Default-argument generators get pulled into the client by the SIL Linker
 // and emitted as `linkonce_odr` so the linker can merge copies across TUs.
 // CLIENT-SIL-DAG: sil shared [export_implementation] @$e4Root15funcWithDefault_3msgySi_s12StaticStringVtFfA0_
-// CLIENT-IR-DAG: define linkonce_odr hidden swiftcc {{.*}} @"$e4Root15funcWithDefault_3msgySi_s12StaticStringVtFfA0_"
+// CLIENT-IR-DAG: define linkonce_odr hidden {{(swiftcc )?}}{{.*}} @"$e4Root15funcWithDefault_3msgySi_s12StaticStringVtFfA0_"
 public func callFuncWithDefault() {
   funcWithDefault(42)
 }

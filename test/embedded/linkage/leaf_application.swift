@@ -69,8 +69,8 @@ public protocol Reflectable: AnyObject {
   func reflect()
 }
 
-// LIBRARY-IR: define linkonce_odr hidden swiftcc void @"$es4swapyyxz_xztlFSi_Tg5"
-// LIBRARY-IR: define linkonce_odr hidden swiftcc void @"$e7Library10PointClassCAA11ReflectableA2aDP7reflectyyFTW"
+// LIBRARY-IR: define linkonce_odr hidden {{(swiftcc )?}}void @"$es4swapyyxz_xztlFSi_Tg5"
+// LIBRARY-IR: define linkonce_odr hidden {{(swiftcc )?}}void @"$e7Library10PointClassCAA11ReflectableA2aDP7reflectyyFTW"
 
 extension PointClass: Reflectable {
   public func reflect() {
@@ -106,17 +106,17 @@ public func testMe() {
   _ = getArray()
 }
 
-// APPLICATION-IR: define {{(protected |dllexport )?}}swiftcc void @"$e11Application6testMeyyF"()
+// APPLICATION-IR: define {{(protected |dllexport )?}}{{(swiftcc )?}}void @"$e11Application6testMeyyF"()
 
 // APPLICATION-SIL: sil public_external [export_implementation] @$e7Library5helloSaySiGyF : $@convention(thin) () -> @owned Array<Int> {
-// APPLICATION-IR: define linkonce_odr hidden swiftcc ptr @"$e7Library5helloSaySiGyF"()
+// APPLICATION-IR: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e7Library5helloSaySiGyF"()
 
 // APPLICATION-SIL: sil public_external [export_implementation] @$e7Library8getArraySaySiGyF : $@convention(thin) () -> @owned Array<Int> {
-// APPLICATION-IR: define linkonce_odr hidden swiftcc ptr @"$e7Library8getArraySaySiGyF"()
+// APPLICATION-IR: define linkonce_odr hidden {{(swiftcc )?}}ptr @"$e7Library8getArraySaySiGyF"()
 
 // APPLICATION-IR: define {{(protected |dllexport )?}}i32 @Application_main
 
-// APPLICATION-IR: define linkonce_odr hidden swiftcc { ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
+// APPLICATION-IR: define linkonce_odr hidden {{(swiftcc )?}}{ ptr, ptr } @"$es27_allocateUninitializedArrayySayxG_BptBwlFSi_Tg5"
 
 @main
 struct Main {

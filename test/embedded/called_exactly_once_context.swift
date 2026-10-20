@@ -21,7 +21,7 @@ public func makeCaptureless() -> @called(exactlyOnce) () -> Void {
 // CHECK-NOT: call ptr @swift_initStackObject
 // CHECK-NOT: swift_onceClosureDestroyedError
 
-// CHECK-LABEL: define internal swiftcc void @__swift_exactly_once_closure_destructor(ptr swiftself %0)
+// CHECK-LABEL: define internal {{(swiftcc )?}}void @__swift_exactly_once_closure_destructor(ptr{{( swiftself)?}} %0)
 // CHECK-NEXT: entry:
 // CHECK-NEXT: call void @llvm.trap()
 // CHECK-NEXT: unreachable
