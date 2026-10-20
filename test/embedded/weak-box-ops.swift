@@ -94,9 +94,10 @@ func load(_ t: Target?) -> Int { return t?.id ?? -1 }
   q.deallocate()
 
   t = nil
-  // CHECK: deinit 3
+  // The two independent strong-reference lifetimes need not end in source order.
+  // CHECK-DAG: deinit 3
   u = nil
-  // CHECK: deinit 4
+  // CHECK-DAG: deinit 4
 }
 
 // swift_weakTakeInit: moving a weak reference into uninitialized memory leaves

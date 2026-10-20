@@ -89,9 +89,11 @@ var sink: Int = 0
   // CHECK: live->nil -1
 
   a = nil
-  // CHECK: deinit 2
+  // Both objects must die here; optimization may end their lifetimes in either
+  // order after their last use.
+  // CHECK-DAG: deinit 2
   b = nil
-  // CHECK: deinit 3
+  // CHECK-DAG: deinit 3
 }
 
 // Assigning over a slot whose object has already died.
