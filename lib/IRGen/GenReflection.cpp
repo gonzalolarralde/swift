@@ -1874,7 +1874,8 @@ void IRGenModule::emitFieldDescriptor(const NominalTypeDecl *D) {
 }
 
 void IRGenModule::emitReflectionMetadataVersion() {
-  if (IRGen.Opts.ReflectionMetadata == ReflectionMetadataMode::None)
+  if (IRGen.Opts.ReflectionMetadata == ReflectionMetadataMode::None ||
+      getSILModule().getOptions().StopOptimizationAfterSerialization)
     return;
 
   auto Init =
