@@ -37,7 +37,7 @@
 
         for i in 0..<count {
             do throws(E) {
-                buffer[i] = try body(i)
+                buffer.initializeElement(at: i, to: try body(i))
             } catch {
                 // The closure threw an error. We need to deinitialize every element we've initialized up to this point.
                 for j in 0 ..< i {
