@@ -293,6 +293,8 @@ if(SWIFT_SHOULD_BUILD_EMBEDDED_STDLIB_CROSS_COMPILING)
     endif()
     if("Xtensa" IN_LIST LLVM_TARGETS_TO_BUILD)
       list(APPEND EMBEDDED_STDLIB_TARGET_TRIPLES
+        "xtensa  xtensa-esp32-none-elf      xtensa-esp32-none-elf"
+        "xtensa  xtensa-esp32s2-none-elf    xtensa-esp32s2-none-elf"
         "xtensa  xtensa-esp32s3-none-elf    xtensa-esp32s3-none-elf"
       )
     endif()

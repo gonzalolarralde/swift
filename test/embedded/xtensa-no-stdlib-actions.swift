@@ -1,3 +1,5 @@
+// RUN: %target-swift-frontend %s -module-name NoStdlib -target xtensa-esp32-none-elf -sdk "" -parse-stdlib -parse-as-library -emit-ir -o - | %FileCheck %s
+// RUN: %target-swift-frontend %s -module-name NoStdlib -target xtensa-esp32s2-none-elf -sdk "" -parse-stdlib -parse-as-library -emit-empty-object-file -c -o %t.s2.o
 // RUN: %target-swift-frontend %s -module-name NoStdlib -target xtensa-esp32s3-none-elf -sdk "" -parse-stdlib -parse-as-library -emit-ir -o - | %FileCheck %s
 // RUN: %target-swift-frontend %s -module-name NoStdlib -target xtensa-esp32s3-none-elf -sdk "" -parse-stdlib -parse-as-library -emit-empty-object-file -c -o %t.o
 // REQUIRES: CODEGENERATOR=Xtensa

@@ -120,6 +120,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/PrefixMapper.h"
 #include "llvm/Support/VirtualFileSystem.h"
+#include "llvm/TargetParser/XtensaTargetParser.h"
 #include "llvm/TextAPI/InterfaceFile.h"
 #include "llvm/TextAPI/TextAPIReader.h"
 #include <algorithm>
@@ -1546,21 +1547,24 @@ std::unique_ptr<clang::CompilerInvocation> ClangImporter::createClangInvocation(
   }
 
   // Check the resolved invocation after -Xcc processing, including direct cc1
-  // module builds and the separate invocation used with -clang-target. The S3
+  // module builds and the separate invocation used with -clang-target. Chip
   // target modules require the same CPU and target in Swift and its importer.
-  if (ctx.LangOpts.Target.getArch() == llvm::Triple::xtensa &&
-      ctx.LangOpts.Target.getVendorName() == "esp32s3") {
+  if (auto TripleCPU = llvm::Xtensa::getCPUForTriple(ctx.LangOpts.Target);
+      !TripleCPU.empty()) {
     const auto &TargetOpts = CI->getTargetOpts();
     if (llvm::Triple::normalize(TargetOpts.Triple) !=
         llvm::Triple::normalize(ctx.LangOpts.Target.str())) {
       ctx.Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
-                         "Clang target for xtensa-esp32s3-none-elf",
+                         "Clang target for " + ctx.LangOpts.Target.str(),
                          TargetOpts.Triple);
       return nullptr;
     }
-    if (TargetOpts.CPU != "esp32s3") {
+    StringRef ImporterCPU = TargetOpts.CPU;
+    if (ImporterCPU.empty())
+      ImporterCPU = llvm::Xtensa::getCPUForTriple(llvm::Triple(TargetOpts.Triple));
+    if (ImporterCPU != TripleCPU) {
       ctx.Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
-                         "CPU for xtensa-esp32s3-none-elf", TargetOpts.CPU);
+                         "CPU for " + ctx.LangOpts.Target.str(), ImporterCPU);
       return nullptr;
     }
   }

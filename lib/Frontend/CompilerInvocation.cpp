@@ -42,6 +42,7 @@
 #include "llvm/Support/VersionTuple.h"
 #include "llvm/Support/WithColor.h"
 #include "llvm/TargetParser/Triple.h"
+#include "llvm/TargetParser/XtensaTargetParser.h"
 
 using namespace swift;
 using namespace llvm::opt;
@@ -1986,8 +1987,7 @@ static bool ParseLangArgs(LangOptions &Opts, ArgList &Args,
   }
   Opts.BypassResilienceChecks |= Args.hasArg(OPT_bypass_resilience);
 
-  if (Target.getArch() == llvm::Triple::xtensa &&
-      Target.getVendorName() == "esp32s3" &&
+  if (!llvm::Xtensa::getCPUForTriple(Target).empty() &&
       !Opts.hasFeature(Feature::Embedded) &&
       !FrontendOpts.ParseStdlib && !Args.hasArg(OPT_emit_empty_object_file) &&
       FrontendOptions::doesActionRequireSwiftStandardLibrary(
@@ -2349,14 +2349,14 @@ static bool ParseClangImporterArgs(ClangImporterOptions &Opts, ArgList &Args,
   if (const Arg *A = Args.getLastArg(OPT_target_cpu))
     Opts.TargetCPU = A->getValue();
 
-  if (LangOpts.Target.getArch() == llvm::Triple::xtensa &&
-      LangOpts.Target.getVendorName() == "esp32s3") {
-    if (!Opts.TargetCPU.empty() && Opts.TargetCPU != "esp32s3") {
+  if (auto TripleCPU = llvm::Xtensa::getCPUForTriple(LangOpts.Target);
+      !TripleCPU.empty()) {
+    if (!Opts.TargetCPU.empty() && Opts.TargetCPU != TripleCPU) {
       Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
-                     "-target-cpu for xtensa-esp32s3-none-elf", Opts.TargetCPU);
+                     "-target-cpu for " + LangOpts.Target.str(), Opts.TargetCPU);
       return true;
     }
-    Opts.TargetCPU = "esp32s3";
+    Opts.TargetCPU = TripleCPU.str();
   }
 
   if (const Arg *A = Args.getLastArg(OPT_index_store_path))
