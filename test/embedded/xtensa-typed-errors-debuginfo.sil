@@ -1,0 +1,27 @@
+// RUN: %target-swift-frontend %s -module-name TypedErrors -target xtensa-esp32s3-none-elf -sdk "" -enable-experimental-feature Embedded -parse-sil -g -emit-ir -o /dev/null
+// RUN: %target-swift-frontend %s -module-name TypedErrors -target xtensa-esp32s3-none-elf -sdk "" -enable-experimental-feature Embedded -parse-sil -g -O -emit-object -o %t.o
+// REQUIRES: swift_feature_Embedded
+// REQUIRES: CODEGENERATOR=Xtensa
+
+// Typed async errors do not use the boxed-Error debug shadow slot. In
+// particular, their payload may be empty or integer-valued, not a pointer.
+sil_stage canonical
+import Builtin
+import Swift
+
+struct EmptyFailure {}
+struct PayloadFailure { var payload: Int32 }
+
+sil @async_empty_error : $@convention(thin) @async () -> @error EmptyFailure {
+bb0:
+  debug_value undef : $EmptyFailure, var, name "$error", argno 1
+  %0 = struct $EmptyFailure ()
+  throw %0 : $EmptyFailure
+}
+
+sil @async_payload_error : $@convention(thin) @async (Int32) -> @error PayloadFailure {
+bb0(%0 : $Int32):
+  debug_value undef : $PayloadFailure, var, name "$error", argno 2
+  %1 = struct $PayloadFailure (%0 : $Int32)
+  throw %1 : $PayloadFailure
+}

@@ -6275,6 +6275,13 @@ void IRGenSILFunction::emitErrorResultVar(CanSILFunctionType FnTy,
   // swifterror in a register.
   if (IGM.ShouldUseSwiftError)
     return;
+  // Typed throws uses a separate payload and a pointer-sized error flag. The
+  // legacy shadow variable below describes a boxed Error pointer and cannot
+  // represent either one. In particular, treating a concrete error's storage
+  // as that pointer crashes on targets without a swifterror register.
+  // Local catch variables still carry the concrete payload's debug info.
+  if (SILFunctionConventions(FnTy, IGM.silConv).isTypedError())
+    return;
   auto ErrorResultSlot = getCalleeErrorResultSlot(IGM.silConv.getSILType(
       ErrorInfo, FnTy, IGM.getMaximalTypeExpansionContext()), false);
   auto Var = DbgValue->getVarInfo();

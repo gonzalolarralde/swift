@@ -1545,6 +1545,26 @@ std::unique_ptr<clang::CompilerInvocation> ClangImporter::createClangInvocation(
     CI->getCodeGenOpts().Argv0 = ctx.ClangImporterOpts.clangPath.c_str();
   }
 
+  // Check the resolved invocation after -Xcc processing, including direct cc1
+  // module builds and the separate invocation used with -clang-target. The S3
+  // target modules require the same CPU and target in Swift and its importer.
+  if (ctx.LangOpts.Target.getArch() == llvm::Triple::xtensa &&
+      ctx.LangOpts.Target.getVendorName() == "esp32s3") {
+    const auto &TargetOpts = CI->getTargetOpts();
+    if (llvm::Triple::normalize(TargetOpts.Triple) !=
+        llvm::Triple::normalize(ctx.LangOpts.Target.str())) {
+      ctx.Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
+                         "Clang target for xtensa-esp32s3-none-elf",
+                         TargetOpts.Triple);
+      return nullptr;
+    }
+    if (TargetOpts.CPU != "esp32s3") {
+      ctx.Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
+                         "CPU for xtensa-esp32s3-none-elf", TargetOpts.CPU);
+      return nullptr;
+    }
+  }
+
   // FIXME: clang fails to generate a module if there is a `-fmodule-map-file`
   // argument pointing to a missing file.
   // Such missing module files occur frequently in SourceKit. If the files are
@@ -1723,8 +1743,9 @@ std::unique_ptr<ClangImporter> ClangImporter::create(
     if (!swiftTargetClangInvocation)
       return nullptr;
   }
-  importer->Impl.configureOptionsForCodeGen(clangDiags, IRGenOpts,
-                                            swiftTargetClangInvocation.get());
+  if (!importer->Impl.configureOptionsForCodeGen(
+          clangDiags, IRGenOpts, swiftTargetClangInvocation.get()))
+    return nullptr;
 
   if (IRGenOpts) {
     // Non-PIC code generation is only supported in Embedded Swift, which does
@@ -1763,18 +1784,6 @@ std::unique_ptr<ClangImporter> ClangImporter::create(
   // open for future module loading.
   // FIXME: This has to be cleaned up on the Clang side before we can improve
   // things here.
-
-  // Validate the resolved Clang CPU as well: -Xcc options are processed after
-  // the Swift -target-cpu default and must not silently change this target's ABI.
-  if (ctx.LangOpts.Target.getArch() == llvm::Triple::xtensa &&
-      ctx.LangOpts.Target.getVendorName() == "esp32s3") {
-    const auto &CPU = instance.getInvocation().getTargetOpts().CPU;
-    if (CPU != "esp32s3") {
-      ctx.Diags.diagnose(SourceLoc(), diag::error_invalid_arg_value,
-                         "CPU for xtensa-esp32s3-none-elf", CPU);
-      return nullptr;
-    }
-  }
 
   // Create the target instance.
   instance.setTarget(clang::TargetInfo::CreateTargetInfo(
@@ -5281,7 +5290,7 @@ static void applyASTAffectingCodeGenOptions(clang::CodeGenOptions &CGO,
   CGO.CoverageMapping = false;
 }
 
-void ClangImporter::Implementation::configureOptionsForCodeGen(
+bool ClangImporter::Implementation::configureOptionsForCodeGen(
     clang::DiagnosticsEngine &Diags, const IRGenOptions *IRGenOpts,
     clang::CompilerInvocation *CI) {
   clang::TargetInfo *targetInfo = nullptr;
@@ -5290,6 +5299,8 @@ void ClangImporter::Implementation::configureOptionsForCodeGen(
     CodeGenOpts.reset(
         new clang::CodeGenOptions(std::move(CI->getCodeGenOpts())));
     targetInfo = clang::TargetInfo::CreateTargetInfo(Diags, *TargetOpts);
+    if (!targetInfo)
+      return false;
 
     // Ensure the target info has configured target-specific defines
     std::string defineBuffer;
@@ -5299,12 +5310,14 @@ void ClangImporter::Implementation::configureOptionsForCodeGen(
   } else {
     targetInfo =
         clang::TargetInfo::CreateTargetInfo(Diags, Invocation->getTargetOpts());
+    if (!targetInfo)
+      return false;
   }
 
   CodeGenTargetInfo.reset(targetInfo);
 
   if (!IRGenOpts)
-    return;
+    return true;
 
   // The underlying ClangImporter invocation is what the bridging-header PCH and
   // Clang modules are emitted/validated against, so it must carry a matching
@@ -5313,6 +5326,7 @@ void ClangImporter::Implementation::configureOptionsForCodeGen(
   applyASTAffectingCodeGenOptions(Invocation->getCodeGenOpts(), *IRGenOpts);
   if (CodeGenOpts)
     applyASTAffectingCodeGenOptions(*CodeGenOpts, *IRGenOpts);
+  return true;
 }
 
 clang::CodeGenOptions &

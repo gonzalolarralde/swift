@@ -81,7 +81,7 @@
 #include <unwind.h>
 #endif
 
-#if defined(__ELF__)
+#if defined(__linux__)
 #include <sys/syscall.h>
 #endif
 
@@ -2656,6 +2656,19 @@ static void swift_task_switchImpl(SWIFT_ASYNC_CONTEXT AsyncContext *resumeContex
                                   SerialExecutorRef newExecutor) {
   auto task = swift_task_getCurrent();
   assert(task && "no current task!");
+
+#if SWIFT_CONCURRENCY_EMBEDDED && defined(__XTENSA_WINDOWED_ABI__)
+  // The Xtensa windowed backend cannot tail-call async continuations yet.
+  // Even a same-executor hop would otherwise accumulate a native stack frame
+  // on every await in an actor loop. Enqueue to return through the worker and
+  // unwind the native stack before resuming; actor ownership stays with the
+  // normal actor-drain path.
+  task->ResumeContext = resumeContext;
+  task->ResumeTask = resumeFunction;
+  _swift_task_clearCurrent();
+  task->flagAsAndEnqueueOnExecutor(newExecutor);
+  return;
+#endif
 
   auto trackingInfo = ExecutorTrackingInfo::current();
   auto currentExecutor =
